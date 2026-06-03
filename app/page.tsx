@@ -22,6 +22,8 @@ interface GroupData {
 interface FeedItem { id: number; text: string; avatar: string; bg: string; time: string }
 interface MyTree { id: number; name: string; date: string; icon: string; location: string; treeNumber: number }
 interface LocationData { id: string; name: string; address: string; treeCount: number; icon: string }
+interface LeaderboardUser { rank: number; name: string; avatar: string; trees: number; co2: number; tier: string; isMe?: boolean }
+interface LeaderboardGroup { rank: number; name: string; members: number; trees: number; topMember: string; badge: string }
 
 // ================================================================
 // CONSTANTS & MOCK DATA
@@ -59,6 +61,31 @@ const INIT_MY: MyTree[] = [
   { id:2, name:'Cây Xoài', date:'20/05/2026', icon:'🌲', location:'Tiền Hải', treeNumber:201 },
   { id:3, name:'Cây Phượng', date:'28/05/2026', icon:'🌴', location:'Đồng Châu', treeNumber:210 },
 ];
+
+// Leaderboard mock data
+const LB_INDIVIDUALS: LeaderboardUser[] = [
+  { rank:1,  name:'Nguyễn Thị Hương', avatar:'👩',     trees:142, co2:2840, tier:'🏔️' },
+  { rank:2,  name:'Trần Văn An',       avatar:'👨',     trees:98,  co2:1960, tier:'🏔️' },
+  { rank:3,  name:'Lê Minh Khoa',      avatar:'🧑‍💼',   trees:87,  co2:1740, tier:'🌲' },
+  { rank:4,  name:'Phạm Thu Bình',     avatar:'👱‍♀️',   trees:61,  co2:1220, tier:'🌲' },
+  { rank:5,  name:'Đỗ Hải Nam',        avatar:'🧔',     trees:55,  co2:1100, tier:'🌲' },
+  { rank:6,  name:'Vũ Thị Lan',        avatar:'👧',     trees:49,  co2:980,  tier:'🌳' },
+  { rank:7,  name:'Hoàng Đức Long',    avatar:'👨‍🌾',   trees:43,  co2:860,  tier:'🌳' },
+  { rank:8,  name:'Ngô Thị Mai',       avatar:'👩‍💼',   trees:38,  co2:760,  tier:'🌳' },
+  { rank:9,  name:'Bùi Văn Thắng',     avatar:'🧑',     trees:32,  co2:640,  tier:'🌳' },
+  { rank:10, name:'Đinh Thu Hà',       avatar:'👩‍🎓',   trees:28,  co2:560,  tier:'🌿' },
+  { rank:247,name:'Bạn',               avatar:'😊',     trees:12,  co2:240,  tier:'🌿', isMe:true },
+];
+const LB_GROUPS: LeaderboardGroup[] = [
+  { rank:1, name:'Sài Gòn Xanh',       members:24, trees:289, topMember:'Nguyễn T.H.', badge:'🥇' },
+  { rank:2, name:'Hà Nội Go Green',     members:18, trees:187, topMember:'Trần V.A.',   badge:'🥈' },
+  { rank:3, name:'SHB Family HCM',      members:31, trees:156, topMember:'Lê M.K.',     badge:'🥉' },
+  { rank:4, name:'Xanh Việt Nam',       members:12, trees:98,  topMember:'Phạm T.B.',   badge:'4️⃣' },
+  { rank:5, name:'Team Eco Warriors',   members:9,  trees:76,  topMember:'Đỗ H.N.',     badge:'5️⃣' },
+];
+const TIER_LABEL: Record<string,string> = {
+  '🌱':'Hạt Mầm','🌿':'Người Gieo','🌳':'Người Bảo Vệ','🌲':'Người Giữ Rừng','🏔️':'Người Dẫn Đầu Xanh',
+};
 
 // Festival / Rewards mock offers
 const FESTIVAL_OFFERS = [
@@ -159,6 +186,35 @@ export default function App() {
 
   // GROUP
   const [group, setGroup] = useState<GroupData|null>(null);
+
+  // LEADERBOARD
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [lbTab, setLbTab] = useState<'individual'|'group'>('individual');
+  const [lbFilter, setLbFilter] = useState<'month'|'alltime'>('month');
+
+  // FLASH EVENT
+  const [flashEvent, setFlashEvent] = useState<{timeLeft:number}|null>(null);
+  const flashTimer = useRef<ReturnType<typeof setInterval>|null>(null);
+
+  // RANDOM DONATE
+  const [showRandomDonate, setShowRandomDonate] = useState(false);
+  const [randomAmt, setRandomAmt] = useState('');
+  const [randomTarget, setRandomTarget] = useState<CommunityTree|null>(null);
+
+  // MY TREES
+  const [showMyTrees, setShowMyTrees] = useState(false);
+  const [myTreeFilter, setMyTreeFilter] = useState<string>('all');
+  const [showTreeDetail, setShowTreeDetail] = useState(false);
+  const [selectedMyTree, setSelectedMyTree] = useState<MyTree|null>(null);
+
+  // GIFT TREE
+  const [showGiftTree, setShowGiftTree] = useState(false);
+  const [giftTreeId, setGiftTreeId] = useState<number|null>(null);
+  const [giftName, setGiftName] = useState('');
+  const [giftMsg, setGiftMsg] = useState('');
+
+  // SHARE
+  const [showShare, setShowShare] = useState(false);
 
   // ---- REALTIME SIM ----
   useEffect(() => {
@@ -311,6 +367,106 @@ export default function App() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [grpDonate, ptType, rewardPts, cashbackPts, totalTrees]);
 
+  // ---- FLASH EVENT ----
+  useEffect(() => {
+    let triggerTimeout: ReturnType<typeof setTimeout>;
+    const trigger = () => {
+      let t = 60;
+      setFlashEvent({ timeLeft: t });
+      flashTimer.current = setInterval(() => {
+        t -= 1;
+        if (t <= 0) {
+          clearInterval(flashTimer.current!);
+          setFlashEvent(null);
+          triggerTimeout = setTimeout(trigger, 150000 + Math.random() * 120000);
+        } else {
+          setFlashEvent({ timeLeft: t });
+        }
+      }, 1000);
+    };
+    triggerTimeout = setTimeout(trigger, 40000 + Math.random() * 20000);
+    return () => { clearTimeout(triggerTimeout); if (flashTimer.current) clearInterval(flashTimer.current); };
+  }, []);
+
+  // ---- RANDOM DONATE ----
+  const openRandomDonate = useCallback(() => {
+    const target = [...comTrees]
+      .filter(t => !t.completed)
+      .sort((a, b) => (a.currentPoints / a.targetPoints) - (b.currentPoints / b.targetPoints))[0] || null;
+    setRandomTarget(target);
+    setShowRandomDonate(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [comTrees]);
+
+  const handleRandomDonate = useCallback(() => {
+    const a = parseInt(randomAmt);
+    if (!a || a <= 0) { showToast('❌ Nhập số điểm hợp lệ!', 'error'); return; }
+    if (a > pts()) { showToast('❌ Không đủ điểm!', 'error'); return; }
+    if (!randomTarget) { showToast('❌ Không có cây nào cần góp!', 'error'); return; }
+    deduct(a);
+    setComTrees(prev => prev.map(t => {
+      if (t.id !== randomTarget.id) return t;
+      const np = Math.min(t.currentPoints + a, t.targetPoints);
+      const done = np >= t.targetPoints;
+      if (done && !t.completed) {
+        const tn = totalTrees + 1; setTotalTrees(p => p + 1);
+        showToast(`🌳 ${t.name} đã trồng thành công!`, 'success');
+        setConfetti(true); setTimeout(() => setConfetti(false), 3000);
+        return { ...t, currentPoints: np, completed: true, treeNumber: tn, contributorCount: t.contributorCount + 1, contributors: [...t.contributors, { name: 'Bạn', avatar: '😊' }] };
+      }
+      return { ...t, currentPoints: np, contributorCount: t.contributorCount + 1, contributors: [...t.contributors, { name: 'Bạn', avatar: '😊' }] };
+    }));
+    setShowRandomDonate(false); setRandomAmt('');
+    showToast(`✅ Đã góp ${fmt(a)} điểm cho ${randomTarget.name}!`, 'success');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [randomAmt, randomTarget, ptType, rewardPts, cashbackPts, totalTrees]);
+
+  const handleRandomQuick = useCallback(() => {
+    const quickAmt = [5000, 10000, 20000][Math.floor(Math.random() * 3)];
+    if (quickAmt > pts()) { showToast('❌ Không đủ điểm!', 'error'); return; }
+    const target = [...comTrees].filter(t => !t.completed).sort((a,b) => (a.currentPoints/a.targetPoints) - (b.currentPoints/b.targetPoints))[0];
+    if (!target) { showToast('❌ Không có cây nào cần góp!', 'error'); return; }
+    deduct(quickAmt);
+    setComTrees(prev => prev.map(t => {
+      if (t.id !== target.id) return t;
+      const np = Math.min(t.currentPoints + quickAmt, t.targetPoints);
+      const done = np >= t.targetPoints;
+      if (done && !t.completed) {
+        const tn = totalTrees + 1; setTotalTrees(p => p + 1);
+        setConfetti(true); setTimeout(() => setConfetti(false), 3000);
+        return { ...t, currentPoints: np, completed: true, treeNumber: tn, contributorCount: t.contributorCount + 1, contributors: [...t.contributors, { name: 'Bạn', avatar: '😊' }] };
+      }
+      return { ...t, currentPoints: np, contributorCount: t.contributorCount + 1, contributors: [...t.contributors, { name: 'Bạn', avatar: '😊' }] };
+    }));
+    showToast(`🎲 Hệ thống góp ${fmt(quickAmt)} điểm vào ${target.name}!`, 'success');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [comTrees, ptType, rewardPts, cashbackPts, totalTrees]);
+
+  const handleFlashBuy = useCallback(() => {
+    if (pts() < TREE_PRICE) { showToast('❌ Không đủ điểm!', 'error'); return; }
+    deduct(TREE_PRICE);
+    const tn1 = totalTrees + 1; const tn2 = totalTrees + 2;
+    setTotalTrees(p => p + 2);
+    const t1: MyTree = { id: Date.now(), name: `Cây ${pick(['Bàng','Xoài','Phượng'])}`, date: new Date().toLocaleDateString('vi-VN'), icon: pick(TREE_ICONS), location: pick(LOCATIONS).name, treeNumber: tn1 };
+    const t2: MyTree = { id: Date.now()+1, name: `Cây ${pick(['Sưa','Bằng Lăng','Tràm'])}`, date: new Date().toLocaleDateString('vi-VN'), icon: pick(TREE_ICONS), location: pick(LOCATIONS).name, treeNumber: tn2 };
+    setMyTrees(p => [t2, t1, ...p]);
+    setEcertData({ name: 'Nguyễn Văn A', code: `SHB-TREE-${tn1}`, date: new Date().toLocaleDateString('vi-VN'), loc: t1.location });
+    if (flashTimer.current) clearInterval(flashTimer.current);
+    setFlashEvent(null);
+    setConfetti(true); setTimeout(() => setConfetti(false), 4000);
+    showToast(`🎉 FLASH! Bạn nhận 2 cây #${tn1} & #${tn2}!`, 'success');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ptType, rewardPts, cashbackPts, totalTrees]);
+
+  // GIFT TREE HANDLER
+  const handleGiftTree = useCallback(() => {
+    if (!giftName.trim()) { showToast('❌ Nhập tên người nhận!', 'error'); return; }
+    setShowGiftTree(false); setGiftName(''); setGiftMsg('');
+    setConfetti(true); setTimeout(() => setConfetti(false), 3000);
+    showToast(`🎁 Đã tặng cây thành công cho ${giftName}!`, 'success');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [giftName, giftMsg]);
+
   // m² calculation (1 tree ≈ 25m²)
   const greenArea = myTrees.length * 25;
 
@@ -462,7 +618,7 @@ export default function App() {
         <button className="cp-nav-btn" onClick={() => setPage('rewards')} id="cp-back">←</button>
         <span className="cp-nav-title">🌱 Chiến dịch Trồng Cây</span>
         <div className="cp-nav-right">
-          <button className="cp-nav-btn" id="cp-share">📤</button>
+          <button className="cp-nav-btn" id="cp-share" onClick={() => setShowShare(true)}>📤</button>
         </div>
       </nav>
 
@@ -502,9 +658,31 @@ export default function App() {
                 <div className="cp-prog-fill" style={{ width:`${Math.min((totalTrees/target)*100,100)}%` }} />
               </div>
             </div>
+            {/* Flash Event Banner */}
+            {flashEvent && (
+              <div className="flash-banner">
+                <div className="flash-left">
+                  <span className="flash-bolt">⚡</span>
+                  <div>
+                    <div className="flash-title">FLASH EVENT</div>
+                    <div className="flash-desc">50,000 điểm = <strong>2 cây</strong> — chỉ còn</div>
+                  </div>
+                </div>
+                <div className="flash-right">
+                  <div className="flash-timer">{flashEvent.timeLeft}s</div>
+                  <button className="flash-cta" onClick={handleFlashBuy}>Mua ngay 🔥</button>
+                </div>
+              </div>
+            )}
+
             <div className="cp-cta">
               <button className="cp-cta-btn cp-cta-primary" onClick={() => setShowBuy(true)} id="btn-buy">🌳 Mua cây ngay</button>
               <button className="cp-cta-btn cp-cta-secondary" onClick={() => setShowDonate(true)} id="btn-donate">💚 Góp điểm</button>
+            </div>
+            <div className="cp-cta-row2">
+              <button className="cp-cta-ghost" onClick={() => setShowLeaderboard(true)}>🏆 Bảng xếp hạng</button>
+              <button className="cp-cta-ghost cp-cta-ghost-green" onClick={openRandomDonate}>🎲 Góp ngẫu nhiên</button>
+              <button className="cp-cta-ghost cp-cta-ghost-blue" onClick={handleRandomQuick}>✨ Hệ thống chọn</button>
             </div>
           </div>
 
@@ -587,6 +765,99 @@ export default function App() {
             </div>
           )}
 
+          {/* ---- LEADERBOARD SECTION ---- */}
+          <div className="sec-title">🏆 Bảng xếp hạng</div>
+          <div className="lb-card">
+            {/* Tabs */}
+            <div className="lb-tabs">
+              <button className={`lb-tab ${lbTab==='individual'?'lb-tab-on':''}`} onClick={() => setLbTab('individual')}>👤 Cá nhân</button>
+              <button className={`lb-tab ${lbTab==='group'?'lb-tab-on':''}`} onClick={() => setLbTab('group')}>👥 Nhóm</button>
+            </div>
+            {/* Filter */}
+            <div className="lb-filters">
+              <button className={`lb-filter ${lbFilter==='month'?'lb-filter-on':''}`} onClick={() => setLbFilter('month')}>Tháng này</button>
+              <button className={`lb-filter ${lbFilter==='alltime'?'lb-filter-on':''}`} onClick={() => setLbFilter('alltime')}>Tất cả</button>
+            </div>
+
+            {lbTab === 'individual' ? (
+              <div className="lb-list">
+                {LB_INDIVIDUALS.slice(0, 10).map((u, i) => (
+                  <div key={u.rank} className={`lb-row ${u.isMe ? 'lb-row-me' : ''} ${i < 3 ? 'lb-row-top' : ''}`}>
+                    <div className="lb-rank">
+                      {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : <span className="lb-rank-num">{u.rank}</span>}
+                    </div>
+                    <div className="lb-avatar">{u.avatar}</div>
+                    <div className="lb-info">
+                      <div className="lb-name">{u.name} <span className="lb-tier">{u.tier}</span></div>
+                      <div className="lb-sub">{TIER_LABEL[u.tier]}</div>
+                    </div>
+                    <div className="lb-stats">
+                      <div className="lb-trees">{u.trees} 🌳</div>
+                      <div className="lb-co2">{fmt(u.co2)} kg CO₂</div>
+                    </div>
+                  </div>
+                ))}
+                {/* Divider + my rank */}
+                <div className="lb-divider">· · ·</div>
+                {(() => { const me = LB_INDIVIDUALS.find(u => u.isMe)!; const myTrees2 = myTrees.length; return (
+                  <div className="lb-row lb-row-me">
+                    <div className="lb-rank"><span className="lb-rank-num">{me.rank}</span></div>
+                    <div className="lb-avatar">{me.avatar}</div>
+                    <div className="lb-info">
+                      <div className="lb-name">{me.name} <span className="lb-tier">{me.tier}</span></div>
+                      <div className="lb-sub">Cần thêm {LB_INDIVIDUALS[9].trees - myTrees2 + 1} cây để vào Top 10</div>
+                    </div>
+                    <div className="lb-stats">
+                      <div className="lb-trees">{myTrees2} 🌳</div>
+                      <div className="lb-co2">{fmt(myTrees2 * 20)} kg CO₂</div>
+                    </div>
+                  </div>
+                ); })()}
+                <button className="lb-buy-nudge" onClick={() => setShowBuy(true)}>🌳 Mua cây để leo hạng →</button>
+              </div>
+            ) : (
+              <div className="lb-list">
+                {LB_GROUPS.map((g, i) => (
+                  <div key={g.rank} className={`lb-row ${i < 3 ? 'lb-row-top' : ''} ${group && group.name === g.name ? 'lb-row-me' : ''}`}>
+                    <div className="lb-rank">
+                      {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : <span className="lb-rank-num">{g.rank}</span>}
+                    </div>
+                    <div className="lb-avatar">{g.badge}</div>
+                    <div className="lb-info">
+                      <div className="lb-name">{g.name}</div>
+                      <div className="lb-sub">{g.members} thành viên · Top: {g.topMember}</div>
+                    </div>
+                    <div className="lb-stats">
+                      <div className="lb-trees">{g.trees} 🌳</div>
+                      <div className="lb-co2">{fmt(g.trees * 20)} kg CO₂</div>
+                    </div>
+                  </div>
+                ))}
+                {/* User's group if exists */}
+                {group && (
+                  <>
+                    <div className="lb-divider">· · ·</div>
+                    <div className="lb-row lb-row-me">
+                      <div className="lb-rank"><span className="lb-rank-num">?</span></div>
+                      <div className="lb-avatar">👥</div>
+                      <div className="lb-info">
+                        <div className="lb-name">{group.name} <span style={{fontSize:10,color:'var(--shb)',fontWeight:700}}>Nhóm của bạn</span></div>
+                        <div className="lb-sub">{group.members.length} thành viên</div>
+                      </div>
+                      <div className="lb-stats">
+                        <div className="lb-trees">{group.totalTreesBought} 🌳</div>
+                        <div className="lb-co2">{fmt(group.totalTreesBought * 20)} kg CO₂</div>
+                      </div>
+                    </div>
+                  </>
+                )}
+                {!group && (
+                  <button className="lb-buy-nudge" onClick={() => setShowCreateGrp(true)}>👥 Tạo nhóm để lên bảng xếp hạng →</button>
+                )}
+              </div>
+            )}
+          </div>
+
           {/* LIVE FEED */}
           <div className="sec-title">📡 Hoạt động trực tiếp</div>
           <div className="feed">
@@ -635,7 +906,7 @@ export default function App() {
 
           <div className="forest-grid">
             {myTrees.map(t => (
-              <div key={t.id} className="ft-item" onClick={() => { setSelLoc(LOCATIONS.find(l=>l.name===t.location)?.id||'tienhai'); setShowLocModal(true); }}>
+              <div key={t.id} className="ft-item" onClick={() => { setSelectedMyTree(t); setShowTreeDetail(true); }}>
                 <span className="ft-icon">{t.icon}</span>
                 <div className="ft-num">#{t.treeNumber}</div>
                 <div className="ft-date">{t.date}</div>
@@ -643,6 +914,10 @@ export default function App() {
               </div>
             ))}
           </div>
+
+          <button className="mt-view-all-btn" onClick={() => setShowMyTrees(true)}>
+            📋 Xem thông tin tất cả cây của tôi →
+          </button>
 
           {/* MAP */}
           <div className="sec-title">🗺️ Vị trí cây đã trồng</div>
@@ -833,6 +1108,281 @@ export default function App() {
             </div>
             <button className="m-btn m-btn-primary" onClick={handleJoinGrp}>🔗 Tham gia nhóm</button>
             <button className="m-btn m-btn-ghost" onClick={() => setShowJoinGrp(false)}>Hủy</button>
+          </div>
+        </div>
+      )}
+
+      {/* RANDOM DONATE MODAL */}
+      {showRandomDonate && (
+        <div className="modal-bg" onClick={() => setShowRandomDonate(false)}>
+          <div className="modal-sheet" onClick={e => e.stopPropagation()}>
+            <div className="modal-handle" />
+            <div className="modal-title">🎲 Góp điểm ngẫu nhiên</div>
+            <div className="modal-sub">Hệ thống tự động chọn cây cần góp nhất — bạn chỉ cần nhập số điểm</div>
+            {randomTarget ? (
+              <div className="rd-target">
+                <div className="rd-target-label">🎯 Cây được chọn tự động</div>
+                <div className="rd-target-name">🌱 {randomTarget.name}</div>
+                <div className="ct-bar" style={{marginTop:8}}><div className="ct-bar-fill" style={{width:`${(randomTarget.currentPoints/randomTarget.targetPoints)*100}%`}} /></div>
+                <div style={{fontSize:11,color:'var(--t2)',marginTop:4}}>{fmt(randomTarget.currentPoints)} / {fmt(randomTarget.targetPoints)} · Cần thêm <strong style={{color:'var(--shb)'}}>{fmt(randomTarget.targetPoints - randomTarget.currentPoints)}</strong> điểm</div>
+              </div>
+            ) : (
+              <div className="rd-target"><div className="rd-target-label">✅ Không còn cây nào cần góp</div></div>
+            )}
+            <div className="pt-toggle" style={{marginTop:12}}>
+              <button className={`pt-btn ${ptType==='reward'?'pt-on':''}`} onClick={() => setPtType('reward')}>🎁 Thưởng: {fmt(rewardPts)}</button>
+              <button className={`pt-btn ${ptType==='cashback'?'pt-on':''}`} onClick={() => setPtType('cashback')}>💰 Hoàn: {fmt(cashbackPts)}</button>
+            </div>
+            <div style={{marginBottom:8,marginTop:12}}>
+              <label className="modal-label">Số điểm muốn góp</label>
+              <input type="number" className="modal-input" placeholder="Nhập số điểm..." value={randomAmt} onChange={e => setRandomAmt(e.target.value)} />
+              <div className="modal-hint">Số dư: {fmt(pts())} điểm</div>
+            </div>
+            <div className="quick-grid">
+              {[5000,10000,20000,30000,40000,50000].map(a => (
+                <button key={a} className={`q-btn ${randomAmt===a.toString()?'q-on':''}`} onClick={() => setRandomAmt(a.toString())}>{fmt(a)}</button>
+              ))}
+            </div>
+            <button className="m-btn m-btn-primary" onClick={handleRandomDonate} disabled={!randomTarget}>🎲 Xác nhận góp ngẫu nhiên</button>
+            <div className="rd-hint-box">
+              <div className="rd-hint-title">💡 Tại sao chọn ngẫu nhiên?</div>
+              <div className="rd-hint-text">Hệ thống ưu tiên cây gần hoàn thành nhất — điểm của bạn có tác động tối đa, giúp cây được trồng sớm nhất!</div>
+            </div>
+            <button className="m-btn m-btn-ghost" onClick={() => setShowRandomDonate(false)}>Hủy</button>
+          </div>
+        </div>
+      )}
+
+      {/* LEADERBOARD FULL MODAL */}
+      {showLeaderboard && (
+        <div className="modal-bg" onClick={() => setShowLeaderboard(false)}>
+          <div className="modal-sheet" style={{maxHeight:'92vh'}} onClick={e => e.stopPropagation()}>
+            <div className="modal-handle" />
+            <div className="modal-title">🏆 Bảng xếp hạng toàn chiến dịch</div>
+            <div className="lb-tabs" style={{marginBottom:8}}>
+              <button className={`lb-tab ${lbTab==='individual'?'lb-tab-on':''}`} onClick={() => setLbTab('individual')}>👤 Cá nhân</button>
+              <button className={`lb-tab ${lbTab==='group'?'lb-tab-on':''}`} onClick={() => setLbTab('group')}>👥 Nhóm</button>
+            </div>
+            <div className="lb-filters" style={{marginBottom:12}}>
+              <button className={`lb-filter ${lbFilter==='month'?'lb-filter-on':''}`} onClick={() => setLbFilter('month')}>Tháng 6</button>
+              <button className={`lb-filter ${lbFilter==='alltime'?'lb-filter-on':''}`} onClick={() => setLbFilter('alltime')}>Tất cả</button>
+            </div>
+            {/* Tier legend */}
+            <div className="lb-legend">
+              {Object.entries(TIER_LABEL).map(([icon, label]) => (
+                <div key={icon} className="lb-legend-item"><span>{icon}</span><span>{label}</span></div>
+              ))}
+            </div>
+            {lbTab === 'individual' ? (
+              <div className="lb-list">
+                {LB_INDIVIDUALS.slice(0, 10).map((u, i) => (
+                  <div key={u.rank} className={`lb-row ${u.isMe?'lb-row-me':''} ${i<3?'lb-row-top':''}`}>
+                    <div className="lb-rank">{i===0?'🥇':i===1?'🥈':i===2?'🥉':<span className="lb-rank-num">{u.rank}</span>}</div>
+                    <div className="lb-avatar">{u.avatar}</div>
+                    <div className="lb-info">
+                      <div className="lb-name">{u.name} <span className="lb-tier">{u.tier}</span></div>
+                      <div className="lb-sub">{TIER_LABEL[u.tier]} · {u.co2.toLocaleString('vi-VN')} kg CO₂</div>
+                    </div>
+                    <div className="lb-stats">
+                      <div className="lb-trees">{u.trees} 🌳</div>
+                    </div>
+                  </div>
+                ))}
+                <div className="lb-divider">· · ·</div>
+                <div className="lb-row lb-row-me">
+                  <div className="lb-rank"><span className="lb-rank-num">247</span></div>
+                  <div className="lb-avatar">😊</div>
+                  <div className="lb-info">
+                    <div className="lb-name">Bạn <span className="lb-tier">🌿</span></div>
+                    <div className="lb-sub">Cần +{Math.max(LB_INDIVIDUALS[9].trees - myTrees.length + 1, 1)} cây để vào Top 10</div>
+                  </div>
+                  <div className="lb-stats"><div className="lb-trees">{myTrees.length} 🌳</div></div>
+                </div>
+              </div>
+            ) : (
+              <div className="lb-list">
+                {LB_GROUPS.map((g, i) => (
+                  <div key={g.rank} className={`lb-row ${i<3?'lb-row-top':''}`}>
+                    <div className="lb-rank">{i===0?'🥇':i===1?'🥈':i===2?'🥉':<span className="lb-rank-num">{g.rank}</span>}</div>
+                    <div className="lb-avatar">{g.badge}</div>
+                    <div className="lb-info">
+                      <div className="lb-name">{g.name}</div>
+                      <div className="lb-sub">{g.members} TV · Top: {g.topMember} · {fmt(g.trees*20)} kg CO₂</div>
+                    </div>
+                    <div className="lb-stats"><div className="lb-trees">{g.trees} 🌳</div></div>
+                  </div>
+                ))}
+                {group && (
+                  <>
+                    <div className="lb-divider">· · ·</div>
+                    <div className="lb-row lb-row-me">
+                      <div className="lb-rank"><span className="lb-rank-num">?</span></div>
+                      <div className="lb-avatar">👥</div>
+                      <div className="lb-info">
+                        <div className="lb-name">{group.name} <span style={{fontSize:10,color:'var(--shb)',fontWeight:700}}>Nhóm bạn</span></div>
+                        <div className="lb-sub">{group.members.length} thành viên</div>
+                      </div>
+                      <div className="lb-stats"><div className="lb-trees">{group.totalTreesBought} 🌳</div></div>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+            <button className="m-btn m-btn-ghost" onClick={() => setShowLeaderboard(false)}>Đóng</button>
+          </div>
+        </div>
+      )}
+
+      {/* MY TREES MODAL */}
+      {showMyTrees && (
+        <div className="modal-bg" onClick={() => setShowMyTrees(false)}>
+          <div className="modal-sheet" style={{maxHeight:'92vh'}} onClick={e => e.stopPropagation()}>
+            <div className="modal-handle" />
+            <div className="modal-title">🌳 Cây của tôi</div>
+            <div className="mt-summary">
+              <div className="mt-stat"><div className="mt-stat-val">{myTrees.length}</div><div className="mt-stat-lbl">Cây đã mua</div></div>
+              <div className="mt-stat-div" />
+              <div className="mt-stat"><div className="mt-stat-val">{myTrees.length * 25}m²</div><div className="mt-stat-lbl">Phủ xanh</div></div>
+              <div className="mt-stat-div" />
+              <div className="mt-stat"><div className="mt-stat-val">{myTrees.length * 20}kg</div><div className="mt-stat-lbl">CO₂/năm</div></div>
+            </div>
+            <div className="tab-row" style={{marginBottom:12}}>
+              <button className={`tab ${myTreeFilter==='all'?'tab-on':'tab-off'}`} onClick={() => setMyTreeFilter('all')}>Tất cả ({myTrees.length})</button>
+              {LOCATIONS.filter(l => myTrees.some(t => t.location === l.name)).map(l => (
+                <button key={l.id} className={`tab ${myTreeFilter===l.id?'tab-on':'tab-off'}`} onClick={() => setMyTreeFilter(l.id)}>
+                  {l.icon} {l.name} ({myTrees.filter(t => t.location === l.name).length})
+                </button>
+              ))}
+            </div>
+            <div style={{display:'flex',flexDirection:'column',gap:10,marginBottom:8}}>
+              {myTrees
+                .filter(t => myTreeFilter === 'all' || LOCATIONS.find(l => l.id === myTreeFilter)?.name === t.location)
+                .map(t => (
+                  <div key={t.id} className="mt-tree-card">
+                    <div className="mt-tree-left">
+                      <span className="mt-tree-icon">{t.icon}</span>
+                      <div className="mt-tree-info">
+                        <div className="mt-tree-name">{t.name} <span className="mt-tree-num">#{t.treeNumber}</span></div>
+                        <div className="mt-tree-meta">📍 {t.location} · 🗓️ {t.date}</div>
+                        <div className="mt-tree-eco">~25 m² · ~20 kg CO₂/năm</div>
+                      </div>
+                    </div>
+                    <div className="mt-tree-actions">
+                      <button className="mt-btn-cert" title="Xem chứng nhận" onClick={() => {
+                        setEcertData({ name:'Nguyễn Văn A', code:`SHB-TREE-${t.treeNumber}`, date:t.date, loc:t.location });
+                        setShowMyTrees(false); setShowEcert(true);
+                      }}>📜</button>
+                      <button className="mt-btn-gift" title="Tặng cây" onClick={() => {
+                        setGiftTreeId(t.id); setShowMyTrees(false); setShowGiftTree(true);
+                      }}>🎁</button>
+                    </div>
+                  </div>
+                ))
+              }
+            </div>
+            <button className="m-btn m-btn-ghost" onClick={() => setShowMyTrees(false)}>Đóng</button>
+          </div>
+        </div>
+      )}
+
+      {/* TREE DETAIL MODAL */}
+      {showTreeDetail && selectedMyTree && (
+        <div className="modal-bg" onClick={() => setShowTreeDetail(false)}>
+          <div className="modal-sheet" onClick={e => e.stopPropagation()}>
+            <div className="modal-handle" />
+            <div style={{textAlign:'center',marginBottom:16}}>
+              <span style={{fontSize:60,display:'block',animation:'treeSway 3s ease-in-out infinite'}}>{selectedMyTree.icon}</span>
+              <div style={{fontSize:20,fontWeight:700,marginTop:8}}>{selectedMyTree.name}</div>
+              <div style={{fontSize:14,color:'var(--shb)',fontWeight:800,marginTop:2}}>Cây #{selectedMyTree.treeNumber}</div>
+            </div>
+            <div style={{background:'var(--section)',borderRadius:'var(--r-lg)',padding:16,marginBottom:16}}>
+              {[
+                ['Ngày trồng', selectedMyTree.date],
+                ['Vị trí', `📍 ${selectedMyTree.location}`],
+                ['Diện tích phủ xanh', '~25 m²'],
+                ['CO₂ hấp thụ / năm', '~20 kg'],
+              ].map(([k,v],i,arr) => (
+                <div key={k} style={{display:'flex',justifyContent:'space-between',padding:'9px 0',borderBottom:i<arr.length-1?'1px dashed var(--b2)':'none'}}>
+                  <span style={{fontSize:13,color:'var(--t2)'}}>{k}</span>
+                  <span style={{fontSize:13,fontWeight:700,color:i>=2?'var(--ok)':'var(--t1)'}}>{v}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:8}}>
+              <button className="m-btn m-btn-primary" style={{margin:0}} onClick={() => {
+                setEcertData({ name:'Nguyễn Văn A', code:`SHB-TREE-${selectedMyTree.treeNumber}`, date:selectedMyTree.date, loc:selectedMyTree.location });
+                setShowTreeDetail(false); setShowEcert(true);
+              }}>📜 Chứng nhận</button>
+              <button className="m-btn m-btn-ghost" style={{margin:0}} onClick={() => {
+                setGiftTreeId(selectedMyTree.id); setShowTreeDetail(false); setShowGiftTree(true);
+              }}>🎁 Tặng cây</button>
+            </div>
+            <button className="m-btn m-btn-ghost" onClick={() => setShowTreeDetail(false)}>Đóng</button>
+          </div>
+        </div>
+      )}
+
+      {/* GIFT TREE MODAL */}
+      {showGiftTree && (
+        <div className="modal-bg" onClick={() => setShowGiftTree(false)}>
+          <div className="modal-sheet" onClick={e => e.stopPropagation()}>
+            <div className="modal-handle" />
+            <div className="modal-title">🎁 Tặng cây cho bạn bè</div>
+            <div className="modal-sub">Tặng đi một phần tương lai xanh cho người thân 🌿</div>
+            {(() => { const t = myTrees.find(x => x.id === giftTreeId); if (!t) return null; return (
+              <div style={{background:'linear-gradient(135deg,#F0FDF4,#DCFCE7)',borderRadius:'var(--r-md)',padding:14,marginBottom:16,border:'1.5px solid var(--ok)',display:'flex',alignItems:'center',gap:12}}>
+                <span style={{fontSize:36}}>{t.icon}</span>
+                <div>
+                  <div style={{fontWeight:700,fontSize:14}}>{t.name} <span style={{color:'var(--shb)',fontWeight:800}}>#{t.treeNumber}</span></div>
+                  <div style={{fontSize:11,color:'var(--t2)',marginTop:2}}>📍 {t.location} · Trồng ngày {t.date}</div>
+                </div>
+              </div>
+            ); })()}
+            <div style={{marginBottom:12}}>
+              <label className="modal-label">Tên người nhận *</label>
+              <input type="text" className="modal-input" placeholder="VD: Nguyễn Thị Hoa" value={giftName} onChange={e => setGiftName(e.target.value)} />
+            </div>
+            <div style={{marginBottom:16}}>
+              <label className="modal-label">Lời nhắn (tùy chọn)</label>
+              <input type="text" className="modal-input" placeholder="VD: Chúc mừng sinh nhật! 🎂" value={giftMsg} onChange={e => setGiftMsg(e.target.value)} />
+            </div>
+            <button className="m-btn m-btn-primary" onClick={handleGiftTree} disabled={!giftName.trim()}>🎁 Xác nhận tặng cây</button>
+            <button className="m-btn m-btn-ghost" onClick={() => setShowGiftTree(false)}>Hủy</button>
+          </div>
+        </div>
+      )}
+
+      {/* SHARE MODAL */}
+      {showShare && (
+        <div className="modal-bg" onClick={() => setShowShare(false)}>
+          <div className="modal-sheet" onClick={e => e.stopPropagation()}>
+            <div className="modal-handle" />
+            <div className="modal-title">📤 Chia sẻ chiến dịch</div>
+            <div className="modal-sub">Lan tỏa thông điệp xanh — mỗi lượt chia sẻ là thêm một cây được trồng 🌱</div>
+            <div style={{background:'var(--section)',borderRadius:'var(--r-lg)',padding:18,marginBottom:16,textAlign:'center',border:'1px solid var(--b1)'}}>
+              <div style={{fontSize:32,marginBottom:6}}>🌳</div>
+              <div style={{fontSize:15,fontWeight:800,marginBottom:4}}>Chiến dịch Trồng Cây SHB 2026</div>
+              <div style={{fontSize:12,color:'var(--t2)',marginBottom:10}}>Cùng nhau trồng {fmt(target)} cây xanh cho Việt Nam</div>
+              <div style={{display:'inline-flex',alignItems:'center',gap:8,background:'var(--card)',borderRadius:'var(--r-sm)',padding:'6px 14px',fontSize:12,color:'var(--t3)',border:'1px solid var(--b2)'}}>
+                <span>🔗</span> shb.vn/trong-cay-2026
+              </div>
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:10,marginBottom:12}}>
+              {[
+                {icon:'📋',label:'Sao chép link'},
+                {icon:'💬',label:'Chia sẻ Zalo'},
+                {icon:'📘',label:'Facebook'},
+                {icon:'📸',label:'Lưu ảnh'},
+              ].map((s,i) => (
+                <button key={i}
+                  style={{border:'1.5px solid var(--b2)',borderRadius:'var(--r-md)',padding:'14px 8px',background:'var(--card)',cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',justifyContent:'center',gap:8,fontSize:13,fontWeight:600,transition:'var(--tr-f)'}}
+                  onClick={() => { showToast(`✅ ${s.label} thành công!`, 'success'); setShowShare(false); }}
+                >
+                  <span style={{fontSize:22}}>{s.icon}</span>{s.label}
+                </button>
+              ))}
+            </div>
+            <button className="m-btn m-btn-ghost" onClick={() => setShowShare(false)}>Đóng</button>
           </div>
         </div>
       )}

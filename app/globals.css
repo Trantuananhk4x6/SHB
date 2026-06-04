@@ -866,3 +866,21 @@ input[type="number"]{-moz-appearance:textfield}
   display:flex;align-items:center;justify-content:center;gap:6px;
 }
 .mt-view-all-btn:hover{background:linear-gradient(135deg,#FFE8D0,#FFD9B3);transform:translateY(-1px);box-shadow:var(--sh-sm)}
+
+/* ================================================= */
+/*  PIN MODAL                                        */
+/* ================================================= */
+.pin-pad{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:12px;max-width:264px;margin:0 auto;
+}
+.pin-key{
+  aspect-ratio:1;border-radius:50%;
+  background:var(--section);border:1.5px solid var(--b2);
+  font-size:22px;font-weight:700;color:var(--t1);
+  cursor:pointer;font-family:inherit;transition:var(--tr-f);
+  display:flex;align-items:center;justify-content:center;
+}
+.pin-key:hover{background:var(--card);border-color:var(--shb);color:var(--shb);transform:scale(1.07);box-shadow:var(--sh-sm)}
+.pin-key:active{transform:scale(.9);box-shadow:none}
+.pin-key-back{font-size:18px;background:var(--card);color:var(--t2)}

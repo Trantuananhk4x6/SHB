@@ -216,6 +216,14 @@ export default function App() {
   // SHARE
   const [showShare, setShowShare] = useState(false);
 
+  // CONFIRM + PIN
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [confirmData, setConfirmData] = useState<{title:string;desc:string;amount:number;icon:string}|null>(null);
+  const [showPin, setShowPin] = useState(false);
+  const [pinValue, setPinValue] = useState('');
+  const [pinError, setPinError] = useState(false);
+  const pendingActionRef = useRef<(()=>void)|null>(null);
+
   // ---- REALTIME SIM ----
   useEffect(() => {
     const i = setInterval(() => setTotalTrees(p => p + 1), 4000 + Math.random() * 2000);
@@ -458,6 +466,38 @@ export default function App() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ptType, rewardPts, cashbackPts, totalTrees]);
 
+  // CONFIRM + PIN HANDLERS
+  const openConfirm = useCallback((title:string, desc:string, amount:number, icon:string, cb:()=>void) => {
+    pendingActionRef.current = cb;
+    setConfirmData({title, desc, amount, icon});
+    setShowConfirm(true);
+  }, []);
+
+  const handlePinInput = useCallback((digit:string) => {
+    setPinValue(prev => {
+      if (prev.length >= 6) return prev;
+      const next = prev + digit;
+      if (next.length === 6) {
+        setTimeout(() => {
+          if (next === '123456') {
+            setShowPin(false); setShowConfirm(false);
+            setPinValue(''); setPinError(false);
+            pendingActionRef.current?.(); pendingActionRef.current = null;
+          } else {
+            setPinError(true);
+            setTimeout(() => { setPinValue(''); setPinError(false); }, 700);
+          }
+        }, 150);
+      }
+      return next;
+    });
+  }, []);
+
+  const handlePinBack = useCallback(() => {
+    setPinValue(p => p.slice(0,-1));
+    setPinError(false);
+  }, []);
+
   // GIFT TREE HANDLER
   const handleGiftTree = useCallback(() => {
     if (!giftName.trim()) { showToast('❌ Nhập tên người nhận!', 'error'); return; }
@@ -670,7 +710,10 @@ export default function App() {
                 </div>
                 <div className="flash-right">
                   <div className="flash-timer">{flashEvent.timeLeft}s</div>
-                  <button className="flash-cta" onClick={handleFlashBuy}>Mua ngay 🔥</button>
+                  <button className="flash-cta" onClick={() => {
+                    if (pts() < TREE_PRICE) { showToast('❌ Không đủ điểm!', 'error'); return; }
+                    openConfirm('Flash Sale: Mua 1 tặng 1 🔥', `Nhận NGAY 2 cây chỉ với ${fmt(TREE_PRICE)} điểm`, TREE_PRICE, '⚡', handleFlashBuy);
+                  }}>Mua ngay 🔥</button>
                 </div>
               </div>
             )}
@@ -682,7 +725,26 @@ export default function App() {
             <div className="cp-cta-row2">
               <button className="cp-cta-ghost" onClick={() => setShowLeaderboard(true)}>🏆 Bảng xếp hạng</button>
               <button className="cp-cta-ghost cp-cta-ghost-green" onClick={openRandomDonate}>🎲 Góp ngẫu nhiên</button>
-              <button className="cp-cta-ghost cp-cta-ghost-blue" onClick={handleRandomQuick}>✨ Hệ thống chọn</button>
+              <button className="cp-cta-ghost cp-cta-ghost-blue" onClick={() => {
+                const quickAmt = [5000, 10000, 20000][Math.floor(Math.random() * 3)];
+                if (quickAmt > pts()) { showToast('❌ Không đủ điểm!', 'error'); return; }
+                const qTarget = [...comTrees].filter(t => !t.completed).sort((a,b) => (a.currentPoints/a.targetPoints) - (b.currentPoints/b.targetPoints))[0];
+                if (!qTarget) { showToast('❌ Không có cây nào cần góp!', 'error'); return; }
+                openConfirm('Hệ thống tự chọn ✨', `${fmt(quickAmt)} điểm → "${qTarget.name}"`, quickAmt, '✨', () => {
+                  deduct(quickAmt);
+                  setComTrees(prev => prev.map(t => {
+                    if (t.id !== qTarget.id) return t;
+                    const np = Math.min(t.currentPoints + quickAmt, t.targetPoints);
+                    if (np >= t.targetPoints && !t.completed) {
+                      setTotalTrees(p => p + 1);
+                      setConfetti(true); setTimeout(() => setConfetti(false), 3000);
+                      return { ...t, currentPoints: np, completed: true, treeNumber: totalTrees + 1, contributorCount: t.contributorCount + 1, contributors: [...t.contributors, {name:'Bạn',avatar:'😊'}] };
+                    }
+                    return { ...t, currentPoints: np, contributorCount: t.contributorCount + 1, contributors: [...t.contributors, {name:'Bạn',avatar:'😊'}] };
+                  }));
+                  showToast(`✨ Hệ thống góp ${fmt(quickAmt)} điểm vào ${qTarget.name}!`, 'success');
+                });
+              }}>✨ Hệ thống chọn</button>
             </div>
           </div>
 
@@ -756,7 +818,12 @@ export default function App() {
               </div>
               <div style={{marginTop:12,display:'flex',gap:8}}>
                 <input type="number" className="modal-input" placeholder="Nhập số điểm..." value={grpDonate} onChange={e => setGrpDonate(e.target.value)} style={{flex:1,padding:'10px 12px',fontSize:14}} />
-                <button className="cp-cta-btn cp-cta-primary" style={{padding:'10px 18px',whiteSpace:'nowrap'}} onClick={handleGrpDonate}>💚 Góp</button>
+                <button className="cp-cta-btn cp-cta-primary" style={{padding:'10px 18px',whiteSpace:'nowrap'}} onClick={() => {
+                  const a = parseInt(grpDonate);
+                  if (!a || a <= 0) { showToast('❌ Nhập số điểm hợp lệ!', 'error'); return; }
+                  if (a > pts()) { showToast('❌ Không đủ điểm!', 'error'); return; }
+                  openConfirm('Góp điểm cho nhóm', `Nhóm "${group?.name}"`, a, '👥', handleGrpDonate);
+                }}>💚 Góp</button>
               </div>
               <div className="quick-grid" style={{marginTop:8,marginBottom:0}}>
                 {[5000,10000,25000].map(a => (<button key={a} className="q-btn" onClick={() => setGrpDonate(a.toString())}>{fmt(a)}</button>))}
@@ -981,8 +1048,12 @@ export default function App() {
               <button className={`pt-btn ${ptType==='reward'?'pt-on':''}`} onClick={() => setPtType('reward')}>🎁 Điểm thưởng</button>
               <button className={`pt-btn ${ptType==='cashback'?'pt-on':''}`} onClick={() => setPtType('cashback')}>💰 Hoàn tiền</button>
             </div>
-            <button className="m-btn m-btn-primary" onClick={handleBuy} disabled={pts()<TREE_PRICE}>
-              {pts()>=TREE_PRICE ? '🌳 Xác nhận mua cây' : '❌ Không đủ điểm'}
+            <button className="m-btn m-btn-primary" onClick={() => {
+              if (pts() < TREE_PRICE) { showToast('❌ Không đủ điểm!', 'error'); return; }
+              setShowBuy(false);
+              openConfirm('Mua cây xanh', 'Trồng 1 cây xanh cho Việt Nam', TREE_PRICE, '🌳', handleBuy);
+            }} disabled={pts()<TREE_PRICE}>
+              {pts()>=TREE_PRICE ? '🌳 Xem lại & Xác nhận' : '❌ Không đủ điểm'}
             </button>
             <button className="m-btn m-btn-ghost" onClick={() => setShowBuy(false)}>Hủy</button>
           </div>
@@ -1048,7 +1119,14 @@ export default function App() {
                 <button key={a} className={`q-btn ${donateAmt===a.toString()?'q-on':''}`} onClick={() => setDonateAmt(a.toString())}>{fmt(a)}</button>
               ))}
             </div>
-            <button className="m-btn m-btn-primary" onClick={handleDonateTree}>💚 Xác nhận góp điểm</button>
+            <button className="m-btn m-btn-primary" onClick={() => {
+              const a = parseInt(donateAmt);
+              if (!a || a <= 0) { showToast('❌ Nhập số điểm hợp lệ!', 'error'); return; }
+              if (a > pts()) { showToast('❌ Không đủ điểm!', 'error'); return; }
+              const tree = comTrees.find(t => t.id === selTreeId);
+              setShowDonateTree(false);
+              openConfirm('Góp điểm trồng cây', `Góp vào "${tree?.name || 'cây cộng đồng'}"`, a, '🌱', handleDonateTree);
+            }}>💚 Xem lại & Xác nhận</button>
             <button className="m-btn m-btn-ghost" onClick={() => { setShowDonateTree(false); setDonateAmt(''); }}>Hủy</button>
           </div>
         </div>
@@ -1143,7 +1221,14 @@ export default function App() {
                 <button key={a} className={`q-btn ${randomAmt===a.toString()?'q-on':''}`} onClick={() => setRandomAmt(a.toString())}>{fmt(a)}</button>
               ))}
             </div>
-            <button className="m-btn m-btn-primary" onClick={handleRandomDonate} disabled={!randomTarget}>🎲 Xác nhận góp ngẫu nhiên</button>
+            <button className="m-btn m-btn-primary" onClick={() => {
+              const a = parseInt(randomAmt);
+              if (!a || a <= 0) { showToast('❌ Nhập số điểm hợp lệ!', 'error'); return; }
+              if (a > pts()) { showToast('❌ Không đủ điểm!', 'error'); return; }
+              if (!randomTarget) return;
+              setShowRandomDonate(false);
+              openConfirm('Góp điểm ngẫu nhiên', `Hệ thống chọn: "${randomTarget.name}"`, a, '🎲', handleRandomDonate);
+            }} disabled={!randomTarget}>🎲 Xem lại & Xác nhận</button>
             <div className="rd-hint-box">
               <div className="rd-hint-title">💡 Tại sao chọn ngẫu nhiên?</div>
               <div className="rd-hint-text">Hệ thống ưu tiên cây gần hoàn thành nhất — điểm của bạn có tác động tối đa, giúp cây được trồng sớm nhất!</div>
@@ -1229,6 +1314,82 @@ export default function App() {
               </div>
             )}
             <button className="m-btn m-btn-ghost" onClick={() => setShowLeaderboard(false)}>Đóng</button>
+          </div>
+        </div>
+      )}
+
+      {/* CONFIRM MODAL */}
+      {showConfirm && confirmData && (
+        <div className="modal-bg" onClick={() => setShowConfirm(false)}>
+          <div className="modal-sheet" onClick={e => e.stopPropagation()}>
+            <div className="modal-handle" />
+            <div style={{textAlign:'center',marginBottom:20}}>
+              <div style={{fontSize:52,marginBottom:8}}>{confirmData.icon}</div>
+              <div className="modal-title" style={{marginBottom:4}}>{confirmData.title}</div>
+              <div className="modal-sub">{confirmData.desc}</div>
+            </div>
+            <div style={{background:'var(--section)',borderRadius:'var(--r-lg)',padding:18,marginBottom:16,border:'1px solid var(--b1)'}}>
+              {[
+                ['Số điểm trừ', <span style={{fontSize:15,fontWeight:800,color:'var(--shb)'}}>{fmt(confirmData.amount)} điểm</span>],
+                ['Nguồn điểm', ptType==='reward'?'🎁 Điểm thưởng':'💰 Điểm hoàn tiền'],
+                ['Số dư sau GD', <span style={{fontWeight:700,color:'var(--ok)'}}>{fmt(pts() - confirmData.amount)} điểm</span>],
+              ].map(([k,v],i,arr) => (
+                <div key={i as number} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'10px 0',borderBottom:i<arr.length-1?'1px dashed var(--b2)':'none'}}>
+                  <span style={{fontSize:13,color:'var(--t2)'}}>{k as string}</span>
+                  <span style={{fontSize:13,fontWeight:600}}>{v as React.ReactNode}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{background:'#FEF3C7',borderRadius:'var(--r-md)',padding:'10px 14px',marginBottom:16,display:'flex',gap:8,alignItems:'flex-start'}}>
+              <span style={{fontSize:16,flexShrink:0}}>⚠️</span>
+              <span style={{fontSize:12,color:'#92400E',lineHeight:1.5}}>Kiểm tra kỹ thông tin trước khi xác nhận. Giao dịch không thể hoàn tác sau khi nhập mã PIN.</span>
+            </div>
+            <button className="m-btn m-btn-primary" onClick={() => { setShowConfirm(false); setPinValue(''); setPinError(false); setShowPin(true); }}>
+              🔐 Nhập mã PIN để xác nhận
+            </button>
+            <button className="m-btn m-btn-ghost" onClick={() => setShowConfirm(false)}>Hủy giao dịch</button>
+          </div>
+        </div>
+      )}
+
+      {/* PIN MODAL */}
+      {showPin && (
+        <div className="modal-bg">
+          <div className="modal-sheet" style={{paddingBottom:32}} onClick={e => e.stopPropagation()}>
+            <div className="modal-handle" />
+            <div style={{textAlign:'center',marginBottom:24}}>
+              <div style={{fontSize:36,marginBottom:8}}>🔐</div>
+              <div style={{fontSize:19,fontWeight:700,marginBottom:4}}>Nhập mã PIN</div>
+              <div style={{fontSize:13,color:'var(--t2)'}}>Xác nhận giao dịch bằng mã PIN 6 số</div>
+            </div>
+            <div style={{display:'flex',justifyContent:'center',gap:14,marginBottom:28}}>
+              {Array.from({length:6}).map((_,i) => (
+                <div key={i} style={{
+                  width:16,height:16,borderRadius:'50%',
+                  background: pinError ? 'var(--err)' : i < pinValue.length ? 'var(--shb)' : 'var(--b2)',
+                  transition:'background .15s ease, transform .15s ease',
+                  transform: pinError ? 'scale(1.25)' : 'scale(1)',
+                }} />
+              ))}
+            </div>
+            <div className="pin-pad">
+              {['1','2','3','4','5','6','7','8','9','','0','⌫'].map((k,i) => (
+                k === '' ? <div key={i} /> :
+                <button key={i} className={`pin-key ${k==='⌫'?'pin-key-back':''}`}
+                  onClick={() => k === '⌫' ? handlePinBack() : handlePinInput(k)}>
+                  {k}
+                </button>
+              ))}
+            </div>
+            {pinError && (
+              <div style={{textAlign:'center',color:'var(--err)',fontSize:13,fontWeight:700,marginTop:14,animation:'feedIn .3s ease'}}>
+                ❌ Mã PIN không đúng. Vui lòng thử lại.
+              </div>
+            )}
+            <div style={{textAlign:'center',marginTop:10,fontSize:11,color:'var(--t3)'}}>Demo: nhập 1-2-3-4-5-6</div>
+            <button className="m-btn m-btn-ghost" style={{marginTop:14}} onClick={() => { setShowPin(false); setPinValue(''); setPinError(false); }}>
+              Hủy
+            </button>
           </div>
         </div>
       )}

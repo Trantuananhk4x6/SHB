@@ -892,3 +892,58 @@ input[type="number"]{-moz-appearance:textfield}
 .pin-key:hover{background:var(--card);border-color:var(--shb);color:var(--shb);transform:scale(1.07);box-shadow:var(--sh-sm)}
 .pin-key:active{transform:scale(.9);box-shadow:none}
 .pin-key-back{font-size:18px;background:var(--card);color:var(--t2)}
+
+/* ================================================= */
+/*  SVG ICON SYSTEM                                  */
+/* ================================================= */
+.ic-inline{
+  display:inline-flex;align-items:center;vertical-align:middle;
+  margin-right:4px;flex-shrink:0;
+}
+.ic-inline svg{display:block}
+
+/* Avatar circle */
+.av{
+  font-family:'Inter','Segoe UI',sans-serif;
+  text-transform:uppercase;
+  box-shadow:0 1px 3px rgba(0,0,0,.1);
+  border:1.5px solid rgba(255,255,255,.7);
+}
+
+/* Offer brand icon (letter badge) */
+.offer-brand-icon{
+  width:52px;height:52px;border-radius:var(--r-lg);
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:800;color:#fff;
+  background:var(--shb-grad);
+  box-shadow:0 2px 8px rgba(244,123,32,.25);
+  letter-spacing:-0.5px;
+}
+
+/* Tier badges */
+.tier-badge{
+  display:inline-block;padding:1px 7px;border-radius:var(--r-full);
+  font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;
+  line-height:1.6;
+}
+.tier-starter{background:#F3F4F6;color:#6B7280}
+.tier-bronze{background:#FEF3C7;color:#92400E}
+.tier-silver{background:#E5E7EB;color:#374151}
+.tier-gold{background:linear-gradient(135deg,#FEF3C7,#FDE68A);color:#92400E;box-shadow:0 1px 3px rgba(245,158,11,.2)}
+.tier-diamond{background:linear-gradient(135deg,#DBEAFE,#BFDBFE);color:#1E40AF;box-shadow:0 1px 3px rgba(59,130,246,.2)}
+
+/* Toast with SVG icons */
+.toast-icon{
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.toast-icon svg{width:18px;height:18px}
+.toast-err .toast-icon{color:var(--err)}
+.toast-ok .toast-icon{color:var(--ok)}
+
+/* Location icon in map */
+.loc-icon{
+  display:flex;align-items:center;justify-content:center;
+  width:36px;height:36px;border-radius:var(--r-md);
+  background:#FFF0E0;color:var(--shb);flex-shrink:0;
+}
+

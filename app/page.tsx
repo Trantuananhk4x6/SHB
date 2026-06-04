@@ -1117,7 +1117,8 @@ export default function App() {
                 {(() => {
                   const totalGrpPages = Math.ceil(group.trees.length / TREES_PER_PAGE);
                   const currentPage = Math.min(grpTreePage, Math.max(1, totalGrpPages));
-                  const displayTrees = group.trees.slice((currentPage - 1) * TREES_PER_PAGE, currentPage * TREES_PER_PAGE);
+                  const sortedTrees = [...group.trees].reverse();
+                  const displayTrees = sortedTrees.slice((currentPage - 1) * TREES_PER_PAGE, currentPage * TREES_PER_PAGE);
                   return (
                     <>
                       {displayTrees.map(t => (
@@ -1820,6 +1821,7 @@ export default function App() {
             <div style={{display:'flex',flexDirection:'column',gap:10,marginBottom:8}}>
               {myTrees
                 .filter(t => myTreeFilter === 'all' || LOCATIONS.find(l => l.id === myTreeFilter)?.name === t.location)
+                .reverse()
                 .map(t => (
                   <div key={t.id} className="mt-tree-card">
                     <div className="mt-tree-left">

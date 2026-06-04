@@ -109,27 +109,166 @@ const CATEGORIES = [
 ];
 
 // ================================================================
-// 3D COMPONENTS
+// 3D COMPONENTS — Enhanced Forest
 // ================================================================
-function Trunk() {
-  return (<mesh position={[0, 0.6, 0]}><cylinderGeometry args={[0.08, 0.12, 1.2, 8]} /><meshStandardMaterial color="#8B5E3C" roughness={0.8} /></mesh>);
-}
-function Leaves({ position: p, scale: s, color: c }: { position: [number,number,number]; scale: number; color: string }) {
-  const ref = useRef<THREE.Mesh>(null!);
-  const off = useRef(Math.random() * Math.PI * 2);
-  useFrame((st) => { if (ref.current) { ref.current.rotation.y = Math.sin(st.clock.elapsedTime * 0.5 + off.current) * 0.05; ref.current.position.y = p[1] + Math.sin(st.clock.elapsedTime * 0.8 + off.current) * 0.02; } });
-  return (<mesh ref={ref} position={p} scale={s}><sphereGeometry args={[0.45, 12, 12]} /><meshStandardMaterial color={c} roughness={0.6} /></mesh>);
-}
-function Tree3D({ position: p, scale: s = 1 }: { position: [number,number,number]; scale?: number }) {
+
+const TREE_LAYOUT = [
+  {pos:[0,0,-1.9] as [number,number,number], scale:0.65, v:0},
+  {pos:[1.6,0,-0.9] as [number,number,number], scale:0.58, v:1},
+  {pos:[1.95,0,0.8] as [number,number,number], scale:0.7, v:0},
+  {pos:[0.7,0,2.1] as [number,number,number], scale:0.56, v:2},
+  {pos:[-1.4,0,1.9] as [number,number,number], scale:0.63, v:1},
+  {pos:[-2.1,0,0.3] as [number,number,number], scale:0.6, v:0},
+  {pos:[-1.75,0,-1.3] as [number,number,number], scale:0.67, v:2},
+  {pos:[-0.4,0,-2.3] as [number,number,number], scale:0.54, v:1},
+  {pos:[2.35,0,-1.65] as [number,number,number], scale:0.5, v:0},
+  {pos:[2.65,0,1.65] as [number,number,number], scale:0.6, v:2},
+  {pos:[0.2,0,3.2] as [number,number,number], scale:0.52, v:1},
+  {pos:[-2.85,0,-0.55] as [number,number,number], scale:0.58, v:0},
+  {pos:[-0.5,0,3.4] as [number,number,number], scale:0.56, v:2},
+  {pos:[3.25,0,-0.3] as [number,number,number], scale:0.5, v:1},
+  {pos:[-2.55,0,2.2] as [number,number,number], scale:0.62, v:0},
+];
+
+function Tree3D({ position, scale=1, v=0 }: { position:[number,number,number]; scale?:number; v?:number }) {
   const g = useRef<THREE.Group>(null!);
-  useFrame((st) => { if (g.current) g.current.rotation.y = Math.sin(st.clock.elapsedTime * 0.3) * 0.02; });
-  return (<group ref={g} position={p} scale={s}><Trunk /><Leaves position={[0,1.3,0]} scale={1} color="#2D8B4E" /><Leaves position={[-.25,1.1,.15]} scale={.7} color="#3BA55C" /><Leaves position={[.25,1.15,-.1]} scale={.65} color="#228B22" /><Leaves position={[0,1.55,0]} scale={.55} color="#45B764" /></group>);
+  const sw = useRef({ off: Math.random() * Math.PI * 2, spd: 0.28 + Math.random() * 0.22 });
+  useFrame(({ clock }) => {
+    if (g.current) g.current.rotation.z = Math.sin(clock.elapsedTime * sw.current.spd + sw.current.off) * 0.022;
+  });
+  const T = "#7B4F2E";
+  if (v === 1) return (
+    <group ref={g} position={position} scale={scale}>
+      <mesh position={[0,0.45,0]}><cylinderGeometry args={[0.06,0.11,0.9,7]} /><meshStandardMaterial color={T} roughness={0.9} /></mesh>
+      <mesh position={[0,1.1,0]}><coneGeometry args={[0.58,0.86,8]} /><meshStandardMaterial color="#1B5E20" roughness={0.75} /></mesh>
+      <mesh position={[0,1.46,0]}><coneGeometry args={[0.44,0.74,8]} /><meshStandardMaterial color="#2E7D32" roughness={0.75} /></mesh>
+      <mesh position={[0,1.82,0]}><coneGeometry args={[0.3,0.65,8]} /><meshStandardMaterial color="#388E3C" roughness={0.75} /></mesh>
+      <mesh position={[0,2.12,0]}><coneGeometry args={[0.17,0.5,8]} /><meshStandardMaterial color="#43A047" roughness={0.75} /></mesh>
+    </group>
+  );
+  if (v === 2) return (
+    <group ref={g} position={position} scale={scale}>
+      <mesh position={[0,0.55,0]}><cylinderGeometry args={[0.06,0.1,1.1,7]} /><meshStandardMaterial color="#A1887F" roughness={0.85} /></mesh>
+      <mesh position={[0,1.4,0]}><sphereGeometry args={[0.5,10,8]} /><meshStandardMaterial color="#388E3C" roughness={0.75} /></mesh>
+      <mesh position={[-0.28,1.24,0.18]}><sphereGeometry args={[0.32,8,6]} /><meshStandardMaterial color="#F48FB1" roughness={0.65} /></mesh>
+      <mesh position={[0.3,1.2,-0.15]}><sphereGeometry args={[0.28,8,6]} /><meshStandardMaterial color="#F06292" roughness={0.65} /></mesh>
+      <mesh position={[0,1.68,0]}><sphereGeometry args={[0.28,8,6]} /><meshStandardMaterial color="#EC407A" roughness={0.65} /></mesh>
+    </group>
+  );
+  return (
+    <group ref={g} position={position} scale={scale}>
+      <mesh position={[0,0.38,0]}><cylinderGeometry args={[0.07,0.13,0.76,8]} /><meshStandardMaterial color={T} roughness={0.9} /></mesh>
+      <mesh position={[0,0.96,0]}><cylinderGeometry args={[0.04,0.07,0.38,7]} /><meshStandardMaterial color={T} roughness={0.9} /></mesh>
+      <mesh position={[0,1.42,0]}><sphereGeometry args={[0.52,12,10]} /><meshStandardMaterial color="#2E7D32" roughness={0.75} /></mesh>
+      <mesh position={[-0.3,1.22,0.2]}><sphereGeometry args={[0.36,10,8]} /><meshStandardMaterial color="#388E3C" roughness={0.75} /></mesh>
+      <mesh position={[0.32,1.2,-0.15]}><sphereGeometry args={[0.33,10,8]} /><meshStandardMaterial color="#43A047" roughness={0.75} /></mesh>
+      <mesh position={[0.1,1.62,0.12]}><sphereGeometry args={[0.28,10,8]} /><meshStandardMaterial color="#4CAF50" roughness={0.75} /></mesh>
+      <mesh position={[-0.14,1.68,-0.12]}><sphereGeometry args={[0.25,10,8]} /><meshStandardMaterial color="#66BB6A" roughness={0.75} /></mesh>
+    </group>
+  );
 }
+
+function Flower3D({ position, color }: { position:[number,number,number]; color:string }) {
+  return (
+    <group position={position}>
+      <mesh position={[0,0.09,0]}><cylinderGeometry args={[0.013,0.013,0.18,5]} /><meshStandardMaterial color="#4CAF50" roughness={0.9} /></mesh>
+      <mesh position={[0,0.195,0]}><sphereGeometry args={[0.062,7,5]} /><meshStandardMaterial color={color} roughness={0.5} /></mesh>
+      <mesh position={[0,0.2,0]}><sphereGeometry args={[0.023,5,4]} /><meshStandardMaterial color="#FFF176" roughness={0.4} /></mesh>
+    </group>
+  );
+}
+
+function Bird({ radius, speed, height, phase }: { radius:number; speed:number; height:number; phase:number }) {
+  const ref = useRef<THREE.Group>(null!);
+  const w1 = useRef<THREE.Group>(null!);
+  const w2 = useRef<THREE.Group>(null!);
+  useFrame(({ clock }) => {
+    const t = clock.elapsedTime * speed + phase;
+    if (ref.current) {
+      ref.current.position.set(Math.cos(t) * radius, height + Math.sin(t * 2.5) * 0.12, Math.sin(t) * radius);
+      ref.current.rotation.y = -t + Math.PI / 2;
+    }
+    const flap = Math.sin(clock.elapsedTime * 6) * 0.48;
+    if (w1.current) w1.current.rotation.z = flap;
+    if (w2.current) w2.current.rotation.z = -flap;
+  });
+  return (
+    <group ref={ref}>
+      <mesh><boxGeometry args={[0.22,0.036,0.065]} /><meshStandardMaterial color="#1a1a2e" /></mesh>
+      <group ref={w1} position={[0,0,0.065]}>
+        <mesh position={[0,0.01,0.085]}><boxGeometry args={[0.13,0.02,0.14]} /><meshStandardMaterial color="#16213e" /></mesh>
+      </group>
+      <group ref={w2} position={[0,0,-0.065]}>
+        <mesh position={[0,0.01,-0.085]}><boxGeometry args={[0.13,0.02,0.14]} /><meshStandardMaterial color="#16213e" /></mesh>
+      </group>
+    </group>
+  );
+}
+
 function ForestScene({ count }: { count: number }) {
-  const trees = [];
-  const n = Math.min(count, 15);
-  for (let i = 0; i < n; i++) { const a = (i / n) * Math.PI * 2; const r = 1 + Math.random() * 1.8; trees.push(<Tree3D key={i} position={[Math.cos(a)*r, 0, Math.sin(a)*r]} scale={.5+Math.random()*.5} />); }
-  return (<><ambientLight intensity={0.5} /><directionalLight position={[5,8,3]} intensity={1} color="#FFF5E0" /><directionalLight position={[-3,5,-2]} intensity={0.3} color="#87CEEB" /><mesh rotation={[-Math.PI/2,0,0]} position={[0,-.01,0]}><planeGeometry args={[20,20]} /><meshStandardMaterial color="#7EC850" roughness={.9} /></mesh>{trees}<OrbitControls enableZoom={false} enablePan={false} autoRotate autoRotateSpeed={1.2} maxPolarAngle={Math.PI/2.5} minPolarAngle={Math.PI/4} /></>);
+  const visible = TREE_LAYOUT.slice(0, Math.min(Math.max(count, 5), TREE_LAYOUT.length));
+  return (
+    <>
+      <color attach="background" args={['#87CEEB']} />
+      <fog attach="fog" args={['#B0DCEF', 10, 30]} />
+      <ambientLight intensity={0.68} color="#FFF8E7" />
+      <directionalLight position={[6,10,4]} intensity={1.6} color="#FFF5D0" />
+      <directionalLight position={[-4,6,-3]} intensity={0.28} color="#B3E5FC" />
+      <pointLight position={[0,7,0]} intensity={0.14} color="#FFFDE7" />
+      {/* Ground */}
+      <mesh rotation={[-Math.PI/2,0,0]} position={[0,-0.01,0]}>
+        <planeGeometry args={[40,40]} />
+        <meshStandardMaterial color="#57A657" roughness={0.95} />
+      </mesh>
+      {/* Grass patches */}
+      {([[0.8,0.9],[-1.4,0.5],[1.8,-1.2],[-0.6,-1.8],[2.5,0.8],[-2.0,1.6],[0.3,-0.7]] as [number,number][]).map(([x,z],i) => (
+        <mesh key={i} rotation={[-Math.PI/2,0,0]} position={[x,0,z]}>
+          <circleGeometry args={[0.45+i*0.1,8]} />
+          <meshStandardMaterial color={i%2===0?"#4a9e4a":"#3d8b3d"} roughness={0.95} />
+        </mesh>
+      ))}
+      {/* Pond */}
+      <mesh rotation={[-Math.PI/2,0,0]} position={[2.0,0.005,1.8]}>
+        <circleGeometry args={[0.72,24]} />
+        <meshStandardMaterial color="#64B5F6" roughness={0.05} metalness={0.25} transparent opacity={0.9} />
+      </mesh>
+      <mesh rotation={[-Math.PI/2,0,0]} position={[2.0,0.003,1.8]}>
+        <ringGeometry args={[0.72,0.85,24]} />
+        <meshStandardMaterial color="#8D6E63" roughness={0.9} />
+      </mesh>
+      {/* Gravel path */}
+      <mesh rotation={[-Math.PI/2,0,0]} position={[0,0.002,0.3]}>
+        <planeGeometry args={[0.45,5]} />
+        <meshStandardMaterial color="#D7CCC8" roughness={0.98} />
+      </mesh>
+      {/* Trees */}
+      {visible.map((t,i) => <Tree3D key={i} position={t.pos} scale={t.scale} v={t.v} />)}
+      {/* Flowers */}
+      {([
+        {p:[0.5,0,0.4] as [number,number,number],c:'#FF80AB'},
+        {p:[-0.6,0,0.3] as [number,number,number],c:'#FFD740'},
+        {p:[0.3,0,-0.9] as [number,number,number],c:'#82B1FF'},
+        {p:[-0.4,0,1.1] as [number,number,number],c:'#FFFFFF'},
+        {p:[1.0,0,-0.4] as [number,number,number],c:'#FF7043'},
+        {p:[-1.0,0,-0.8] as [number,number,number],c:'#B39DDB'},
+        {p:[0.8,0,1.6] as [number,number,number],c:'#80DEEA'},
+        {p:[-0.2,0,0.9] as [number,number,number],c:'#FFEB3B'},
+      ]).map((f,i) => <Flower3D key={i} position={f.p} color={f.c} />)}
+      {/* Bushes */}
+      {([[- 1.7,0.22,0.5],[1.4,0.2,-1.3],[-0.6,0.2,2.3]] as [number,number,number][]).map(([x,y,z],i) => (
+        <group key={i} position={[x,y,z]}>
+          <mesh><sphereGeometry args={[0.26,8,6]} /><meshStandardMaterial color="#388E3C" roughness={0.9} /></mesh>
+          <mesh position={[0.18,-0.02,0.12]}><sphereGeometry args={[0.2,8,6]} /><meshStandardMaterial color="#2E7D32" roughness={0.9} /></mesh>
+          <mesh position={[-0.14,0.04,-0.12]}><sphereGeometry args={[0.18,8,6]} /><meshStandardMaterial color="#43A047" roughness={0.9} /></mesh>
+        </group>
+      ))}
+      {/* Birds */}
+      <Bird radius={3.8} speed={0.33} height={2.9} phase={0} />
+      <Bird radius={4.5} speed={0.25} height={3.5} phase={2.3} />
+      <Bird radius={3.0} speed={0.42} height={2.4} phase={4.6} />
+      <OrbitControls enableZoom={false} enablePan={false} autoRotate autoRotateSpeed={0.8} maxPolarAngle={Math.PI/2.2} minPolarAngle={Math.PI/6} />
+    </>
+  );
 }
 
 // Confetti
@@ -206,6 +345,10 @@ export default function App() {
   const [myTreeFilter, setMyTreeFilter] = useState<string>('all');
   const [showTreeDetail, setShowTreeDetail] = useState(false);
   const [selectedMyTree, setSelectedMyTree] = useState<MyTree|null>(null);
+
+  // INVITE MEMBER
+  const [showInvite, setShowInvite] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
 
   // GIFT TREE
   const [showGiftTree, setShowGiftTree] = useState(false);
@@ -465,6 +608,16 @@ export default function App() {
     showToast(`🎉 FLASH! Bạn nhận 2 cây #${tn1} & #${tn2}!`, 'success');
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ptType, rewardPts, cashbackPts, totalTrees]);
+
+  // INVITE HANDLER
+  const handleInvite = useCallback(() => {
+    if (!inviteEmail.includes('@') || inviteEmail.length < 5) { showToast('❌ Email không hợp lệ!', 'error'); return; }
+    const newMember = { name: inviteEmail.split('@')[0], avatar: pick(AVATARS) };
+    setGroup(prev => prev ? { ...prev, members: [...prev.members, newMember] } : null);
+    setShowInvite(false); setInviteEmail('');
+    showToast(`✅ Đã gửi lời mời đến ${inviteEmail}!`, 'success');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inviteEmail]);
 
   // CONFIRM + PIN HANDLERS
   const openConfirm = useCallback((title:string, desc:string, amount:number, icon:string, cb:()=>void) => {
@@ -828,7 +981,10 @@ export default function App() {
               <div className="quick-grid" style={{marginTop:8,marginBottom:0}}>
                 {[5000,10000,25000].map(a => (<button key={a} className="q-btn" onClick={() => setGrpDonate(a.toString())}>{fmt(a)}</button>))}
               </div>
-              <button style={{width:'100%',marginTop:8,padding:8,border:'none',background:'transparent',color:'var(--t3)',fontSize:12,cursor:'pointer',fontFamily:'inherit'}} onClick={() => setGroup(null)}>Rời nhóm</button>
+              <button style={{width:'100%',marginTop:10,padding:'11px 8px',border:'1.5px solid var(--shb)',borderRadius:'var(--r-md)',background:'linear-gradient(135deg,#FFF5EB,#FFE8D0)',color:'var(--shb)',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',justifyContent:'center',gap:6,transition:'var(--tr-f)'}} onClick={() => setShowInvite(true)}>
+                📩 Mời thành viên mới
+              </button>
+              <button style={{width:'100%',marginTop:6,padding:8,border:'none',background:'transparent',color:'var(--t3)',fontSize:12,cursor:'pointer',fontFamily:'inherit'}} onClick={() => setGroup(null)}>Rời nhóm</button>
             </div>
           )}
 
@@ -948,7 +1104,7 @@ export default function App() {
             <Suspense fallback={<div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',background:'linear-gradient(135deg,#E8F5E9,#C8E6C9)'}}>
               <div style={{display:'flex',gap:4}}>{[0,1,2].map(i => (<div key={i} style={{width:8,height:8,borderRadius:'50%',background:'var(--shb)',animation:`loadDot 1.4s ease-in-out ${i*.2}s infinite`}} />))}</div>
             </div>}>
-              <Canvas camera={{position:[4,3,4],fov:50}}>
+              <Canvas camera={{position:[4,4.5,4],fov:46}} gl={{antialias:true}} dpr={[1,2]}>
                 <ForestScene count={myTrees.length} />
               </Canvas>
             </Suspense>
@@ -1314,6 +1470,61 @@ export default function App() {
               </div>
             )}
             <button className="m-btn m-btn-ghost" onClick={() => setShowLeaderboard(false)}>Đóng</button>
+          </div>
+        </div>
+      )}
+
+      {/* INVITE MEMBER MODAL */}
+      {showInvite && group && (
+        <div className="modal-bg" onClick={() => setShowInvite(false)}>
+          <div className="modal-sheet" onClick={e => e.stopPropagation()}>
+            <div className="modal-handle" />
+            <div className="modal-title">📩 Mời thành viên mới</div>
+            <div className="modal-sub">Gửi lời mời tham gia nhóm <strong>{group.name}</strong></div>
+
+            {/* Group code */}
+            <div className="grp-code" style={{marginBottom:16}}>
+              <div className="grp-code-lbl">Chia sẻ mã nhóm này cho bạn bè</div>
+              <div className="grp-code-val">{group.code}</div>
+            </div>
+
+            {/* Email input */}
+            <div style={{marginBottom:14}}>
+              <label className="modal-label">Email người được mời</label>
+              <input type="email" className="modal-input" placeholder="vd: nguyenvana@gmail.com" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleInvite()} />
+              <div className="modal-hint">Người nhận sẽ nhận email với link và mã nhóm</div>
+            </div>
+
+            <button className="m-btn m-btn-primary" onClick={handleInvite} disabled={!inviteEmail.includes('@') || inviteEmail.length < 5}>
+              📩 Gửi lời mời qua email
+            </button>
+
+            <div style={{display:'flex',alignItems:'center',gap:10,margin:'10px 0'}}>
+              <div style={{flex:1,height:1,background:'var(--b2)'}} />
+              <span style={{fontSize:12,color:'var(--t3)',fontWeight:500}}>hoặc</span>
+              <div style={{flex:1,height:1,background:'var(--b2)'}} />
+            </div>
+
+            <button className="m-btn m-btn-ghost" onClick={() => { showToast('✅ Đã sao chép link mời!', 'success'); setShowInvite(false); }}>
+              🔗 Sao chép link mời
+            </button>
+
+            {/* Existing members */}
+            {group.members.length > 0 && (
+              <div style={{marginTop:14,paddingTop:14,borderTop:'1px solid var(--b1)'}}>
+                <div style={{fontSize:12,fontWeight:600,color:'var(--t2)',marginBottom:8}}>Thành viên hiện tại ({group.members.length})</div>
+                <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
+                  {group.members.map((m,i) => (
+                    <div key={i} style={{display:'flex',alignItems:'center',gap:5,background:'var(--section)',borderRadius:'var(--r-full)',padding:'4px 10px'}}>
+                      <span style={{fontSize:14}}>{m.avatar}</span>
+                      <span style={{fontSize:12,fontWeight:600}}>{m.name}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            <button className="m-btn m-btn-ghost" style={{marginTop:8}} onClick={() => setShowInvite(false)}>Đóng</button>
           </div>
         </div>
       )}

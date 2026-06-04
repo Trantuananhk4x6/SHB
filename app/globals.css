@@ -947,3 +947,42 @@ input[type="number"]{-moz-appearance:textfield}
   background:#FFF0E0;color:var(--shb);flex-shrink:0;
 }
 
+/* ---- Group Tree Pagination ---- */
+.grp-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+.grp-page-btn {
+  border: 1.5px solid var(--b2);
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--card);
+  color: var(--t1);
+  cursor: pointer;
+  transition: var(--tr-f);
+}
+.grp-page-btn:hover:not(:disabled) {
+  border-color: var(--shb);
+  color: var(--shb);
+  background: #FFF5EB;
+  transform: scale(1.05);
+}
+.grp-page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.grp-page-info {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--t2);
+  min-width: 90px;
+  text-align: center;
+}
+

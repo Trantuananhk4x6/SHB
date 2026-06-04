@@ -402,6 +402,8 @@ export default function App() {
 
   // GROUP
   const [group, setGroup] = useState<GroupData|null>(null);
+  const [grpTreePage, setGrpTreePage] = useState(1);
+  const TREES_PER_PAGE = 5;
 
   // LEADERBOARD
   const [showLeaderboard, setShowLeaderboard] = useState(false);
@@ -434,7 +436,7 @@ export default function App() {
   const [giftContact, setGiftContact] = useState('');
   const [giftMsg, setGiftMsg] = useState('');
   const [showGiftConfirm, setShowGiftConfirm] = useState(false);
-  const [giftConfirmData, setGiftConfirmData] = useState<{name:string;contact:string;msg:string;treeName:string}|null>(null);
+  const [giftConfirmData, setGiftConfirmData] = useState<{name:string;contact:string;msg:string;treeName:string;treeNumber:number;location:string}|null>(null);
 
   // SHARE
   const [showShare, setShowShare] = useState(false);
@@ -565,6 +567,7 @@ export default function App() {
     }
     const code = genCode();
     setGroup({ id: Date.now().toString(), name: nameTrim, code, members: [{name:'Bạn',avatar:'B'},{name:pick(NAMES),avatar:pick(AVATARS)}], trees: [{id:1,current:0,target:TREE_PRICE,completed:false}], totalTreesBought: 0 });
+    setGrpTreePage(1);
     setShowCreateGrp(false); setGrpName('');
     showToast(`Đã tạo nhóm – Mã: ${code}`, 'success');
   }, [grpName, showToast]);
@@ -578,6 +581,7 @@ export default function App() {
       return;
     }
     setGroup({ id: Date.now().toString(), name: pick(['Rừng Xanh SHB','Team Green VN','Sài Gòn Xanh']), code: codeTrim, members: [{name:pick(NAMES),avatar:pick(AVATARS)},{name:pick(NAMES),avatar:pick(AVATARS)},{name:'Bạn',avatar:'B'}], trees: [{id:1,current:35000,target:TREE_PRICE,completed:false},{id:2,current:TREE_PRICE,target:TREE_PRICE,completed:true,treeNumber:195}], totalTreesBought:1 });
+    setGrpTreePage(1);
     setShowJoinGrp(false); setJoinCode('');
     showToast('Đã tham gia nhóm!', 'success');
   }, [joinCode, showToast]);
@@ -787,7 +791,9 @@ export default function App() {
     // Mở confirm popup
     const tree = myTrees.find(x => x.id === giftTreeId);
     const treeName = tree ? tree.name : 'Cây xanh';
-    setGiftConfirmData({ name: nameTrim, contact: contactTrim, msg: giftMsg, treeName });
+    const treeNumber = tree ? tree.treeNumber : 0;
+    const location = tree ? tree.location : '';
+    setGiftConfirmData({ name: nameTrim, contact: contactTrim, msg: giftMsg, treeName, treeNumber, location });
     setShowGiftConfirm(true);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [giftName, giftContact, giftMsg, giftTreeId, myTrees]);
@@ -1108,17 +1114,47 @@ export default function App() {
               </div>
               <div style={{fontSize:13,fontWeight:700,margin:'12px 0 6px'}}><span className="ic-inline">{I.tree}</span> Cây của nhóm ({group.totalTreesBought} đã trồng)</div>
               <div className="grp-tree-list">
-                {group.trees.map(t => (
-                  <div key={t.id} className="grp-tree">
-                    <div className="grp-tree-no">#{t.id}</div>
-                    <div className="grp-tree-info">
-                      <div className="grp-tree-bar"><div className={`grp-tree-fill ${t.completed?'grp-tree-fill-ok':'grp-tree-fill-on'}`} style={{width:`${(t.current/t.target)*100}%`}} /></div>
-                      <div className={`grp-tree-st ${t.completed?'grp-tree-st-ok':''}`}>
-                        {t.completed ? `Đã trồng – Cây #${t.treeNumber}` : `${fmt(t.current)} / ${fmt(t.target)} (${Math.round((t.current/t.target)*100)}%)`}
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                {(() => {
+                  const totalGrpPages = Math.ceil(group.trees.length / TREES_PER_PAGE);
+                  const currentPage = Math.min(grpTreePage, Math.max(1, totalGrpPages));
+                  const displayTrees = group.trees.slice((currentPage - 1) * TREES_PER_PAGE, currentPage * TREES_PER_PAGE);
+                  return (
+                    <>
+                      {displayTrees.map(t => (
+                        <div key={t.id} className="grp-tree">
+                          <div className="grp-tree-no">#{t.id}</div>
+                          <div className="grp-tree-info">
+                            <div className="grp-tree-bar"><div className={`grp-tree-fill ${t.completed?'grp-tree-fill-ok':'grp-tree-fill-on'}`} style={{width:`${(t.current/t.target)*100}%`}} /></div>
+                            <div className={`grp-tree-st ${t.completed?'grp-tree-st-ok':''}`}>
+                              {t.completed ? `Đã trồng – Cây #${t.treeNumber}` : `${fmt(t.current)} / ${fmt(t.target)} (${Math.round((t.current/t.target)*100)}%)`}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      {totalGrpPages > 1 && (
+                        <div className="grp-pagination">
+                          <button 
+                            disabled={currentPage === 1}
+                            onClick={() => setGrpTreePage(p => Math.max(p - 1, 1))}
+                            className="grp-page-btn"
+                          >
+                            {I.chevLeft}
+                          </button>
+                          <span className="grp-page-info">
+                            Trang {currentPage} / {totalGrpPages}
+                          </span>
+                          <button 
+                            disabled={currentPage === totalGrpPages}
+                            onClick={() => setGrpTreePage(p => Math.min(p + 1, totalGrpPages))}
+                            className="grp-page-btn"
+                          >
+                            {I.chevRight}
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
               <div style={{marginTop:12,display:'flex',gap:8}}>
                 <input type="number" className="modal-input" placeholder="Nhập số điểm..." value={grpDonate} onChange={e => setGrpDonate(e.target.value)} style={{flex:1,padding:'10px 12px',fontSize:14}} />
@@ -1139,7 +1175,7 @@ export default function App() {
               <button style={{width:'100%',marginTop:10,padding:'11px 8px',border:'1.5px solid var(--shb)',borderRadius:'var(--r-md)',background:'linear-gradient(135deg,#FFF5EB,#FFE8D0)',color:'var(--shb)',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',justifyContent:'center',gap:6,transition:'var(--tr-f)'}} onClick={() => setShowInvite(true)}>
                 {I.mail} Mời thành viên mới
               </button>
-              <button style={{width:'100%',marginTop:6,padding:8,border:'none',background:'transparent',color:'var(--t3)',fontSize:12,cursor:'pointer',fontFamily:'inherit'}} onClick={() => setGroup(null)}>Rời nhóm</button>
+              <button style={{width:'100%',marginTop:6,padding:8,border:'none',background:'transparent',color:'var(--t3)',fontSize:12,cursor:'pointer',fontFamily:'inherit'}} onClick={() => { setGroup(null); setGrpTreePage(1); }}>Rời nhóm</button>
             </div>
           )}
 
@@ -1893,9 +1929,10 @@ export default function App() {
             
             <div style={{background:'linear-gradient(135deg,#F0FDF4,#DCFCE7)',borderRadius:'var(--r-md)',padding:14,marginBottom:16,border:'1.5px solid var(--ok)',display:'flex',alignItems:'center',gap:12}}>
               <span style={{color:"#16A34A",fontSize:24}}>{I.gift}</span>
-              <div>
+              <div style={{flex:1}}>
                 <div style={{fontWeight:700,fontSize:15}}>Cây được tặng</div>
-                <div style={{fontSize:13,color:'var(--shb)',fontWeight:700,marginTop:4}}>{giftConfirmData.treeName}</div>
+                <div style={{fontSize:13,color:'var(--shb)',fontWeight:700,marginTop:4}}>{giftConfirmData.treeName} <span style={{color:'#666',fontSize:12}}>#{giftConfirmData.treeNumber}</span></div>
+                <div style={{fontSize:11,color:'var(--t2)',marginTop:3}}>{I.mapPin} {giftConfirmData.location}</div>
               </div>
             </div>
 

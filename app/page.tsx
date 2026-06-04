@@ -354,6 +354,7 @@ export default function App() {
   const [showGiftTree, setShowGiftTree] = useState(false);
   const [giftTreeId, setGiftTreeId] = useState<number|null>(null);
   const [giftName, setGiftName] = useState('');
+  const [giftContact, setGiftContact] = useState('');
   const [giftMsg, setGiftMsg] = useState('');
 
   // SHARE
@@ -448,8 +449,12 @@ export default function App() {
   }, [ptType, rewardPts, cashbackPts, totalTrees]);
 
   const handleDonateTree = useCallback(() => {
-    const a = parseInt(donateAmt);
-    if (!a || a <= 0) { showToast('❌ Nhập số điểm hợp lệ!', 'error'); return; }
+    const amtTrim = donateAmt.trim();
+    if (!/^\d+$/.test(amtTrim) || parseInt(amtTrim) <= 0) {
+      showToast('❌ Số điểm phải là số nguyên dương!', 'error');
+      return;
+    }
+    const a = parseInt(amtTrim);
     if (a > pts()) { showToast('❌ Không đủ điểm!', 'error'); return; }
     deduct(a);
     setComTrees(prev => prev.map(t => {
@@ -470,23 +475,41 @@ export default function App() {
   }, [donateAmt, selTreeId, ptType, rewardPts, cashbackPts, totalTrees]);
 
   const handleCreateGrp = useCallback(() => {
-    if (!grpName.trim()) { showToast('❌ Nhập tên nhóm!', 'error'); return; }
+    const nameTrim = grpName.trim();
+    if (!nameTrim) { showToast('❌ Nhập tên nhóm!', 'error'); return; }
+    if (nameTrim.length < 3) { showToast('❌ Tên nhóm phải có ít nhất 3 ký tự!', 'error'); return; }
+    if (nameTrim.length > 30) { showToast('❌ Tên nhóm không được quá 30 ký tự!', 'error'); return; }
+    const grpNameRegex = /^[a-zA-Z0-9\sàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđĐ]+$/;
+    if (!grpNameRegex.test(nameTrim)) {
+      showToast('❌ Tên nhóm chỉ chứa chữ, số và khoảng trắng!', 'error');
+      return;
+    }
     const code = genCode();
-    setGroup({ id: Date.now().toString(), name: grpName, code, members: [{name:'Bạn',avatar:'😊'},{name:pick(NAMES),avatar:pick(AVATARS)}], trees: [{id:1,current:0,target:TREE_PRICE,completed:false}], totalTreesBought: 0 });
+    setGroup({ id: Date.now().toString(), name: nameTrim, code, members: [{name:'Bạn',avatar:'😊'},{name:pick(NAMES),avatar:pick(AVATARS)}], trees: [{id:1,current:0,target:TREE_PRICE,completed:false}], totalTreesBought: 0 });
     setShowCreateGrp(false); setGrpName('');
     showToast(`✅ Đã tạo nhóm – Mã: ${code}`, 'success');
   }, [grpName, showToast]);
 
   const handleJoinGrp = useCallback(() => {
-    if (!joinCode.trim() || joinCode.length < 4) { showToast('❌ Mã nhóm không hợp lệ!', 'error'); return; }
-    setGroup({ id: Date.now().toString(), name: pick(['Rừng Xanh SHB','Team Green VN','Sài Gòn Xanh']), code: joinCode.toUpperCase(), members: [{name:pick(NAMES),avatar:pick(AVATARS)},{name:pick(NAMES),avatar:pick(AVATARS)},{name:'Bạn',avatar:'😊'}], trees: [{id:1,current:35000,target:TREE_PRICE,completed:false},{id:2,current:TREE_PRICE,target:TREE_PRICE,completed:true,treeNumber:195}], totalTreesBought:1 });
+    const codeTrim = joinCode.trim().toUpperCase();
+    if (!codeTrim) { showToast('❌ Nhập mã nhóm!', 'error'); return; }
+    const codeRegex = /^[A-Z0-9]{6}$/;
+    if (!codeRegex.test(codeTrim)) {
+      showToast('❌ Mã nhóm phải gồm đúng 6 ký tự chữ hoặc số!', 'error');
+      return;
+    }
+    setGroup({ id: Date.now().toString(), name: pick(['Rừng Xanh SHB','Team Green VN','Sài Gòn Xanh']), code: codeTrim, members: [{name:pick(NAMES),avatar:pick(AVATARS)},{name:pick(NAMES),avatar:pick(AVATARS)},{name:'Bạn',avatar:'😊'}], trees: [{id:1,current:35000,target:TREE_PRICE,completed:false},{id:2,current:TREE_PRICE,target:TREE_PRICE,completed:true,treeNumber:195}], totalTreesBought:1 });
     setShowJoinGrp(false); setJoinCode('');
     showToast('✅ Đã tham gia nhóm!', 'success');
   }, [joinCode, showToast]);
 
   const handleGrpDonate = useCallback(() => {
-    const a = parseInt(grpDonate);
-    if (!a || a <= 0) { showToast('❌ Nhập số điểm hợp lệ!', 'error'); return; }
+    const amtTrim = grpDonate.trim();
+    if (!/^\d+$/.test(amtTrim) || parseInt(amtTrim) <= 0) {
+      showToast('❌ Số điểm phải là số nguyên dương!', 'error');
+      return;
+    }
+    const a = parseInt(amtTrim);
     if (a > pts()) { showToast('❌ Không đủ điểm!', 'error'); return; }
     deduct(a);
     setGroup(prev => {
@@ -550,8 +573,12 @@ export default function App() {
   }, [comTrees]);
 
   const handleRandomDonate = useCallback(() => {
-    const a = parseInt(randomAmt);
-    if (!a || a <= 0) { showToast('❌ Nhập số điểm hợp lệ!', 'error'); return; }
+    const amtTrim = randomAmt.trim();
+    if (!/^\d+$/.test(amtTrim) || parseInt(amtTrim) <= 0) {
+      showToast('❌ Số điểm phải là số nguyên dương!', 'error');
+      return;
+    }
+    const a = parseInt(amtTrim);
     if (a > pts()) { showToast('❌ Không đủ điểm!', 'error'); return; }
     if (!randomTarget) { showToast('❌ Không có cây nào cần góp!', 'error'); return; }
     deduct(a);
@@ -611,11 +638,13 @@ export default function App() {
 
   // INVITE HANDLER
   const handleInvite = useCallback(() => {
-    if (!inviteEmail.includes('@') || inviteEmail.length < 5) { showToast('❌ Email không hợp lệ!', 'error'); return; }
-    const newMember = { name: inviteEmail.split('@')[0], avatar: pick(AVATARS) };
+    const emailTrim = inviteEmail.trim();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(emailTrim)) { showToast('❌ Email không đúng định dạng!', 'error'); return; }
+    const newMember = { name: emailTrim.split('@')[0], avatar: pick(AVATARS) };
     setGroup(prev => prev ? { ...prev, members: [...prev.members, newMember] } : null);
     setShowInvite(false); setInviteEmail('');
-    showToast(`✅ Đã gửi lời mời đến ${inviteEmail}!`, 'success');
+    showToast(`✅ Đã gửi lời mời đến ${emailTrim}!`, 'success');
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inviteEmail]);
 
@@ -653,12 +682,40 @@ export default function App() {
 
   // GIFT TREE HANDLER
   const handleGiftTree = useCallback(() => {
-    if (!giftName.trim()) { showToast('❌ Nhập tên người nhận!', 'error'); return; }
-    setShowGiftTree(false); setGiftName(''); setGiftMsg('');
-    setConfetti(true); setTimeout(() => setConfetti(false), 3000);
-    showToast(`🎁 Đã tặng cây thành công cho ${giftName}!`, 'success');
+    const nameTrim = giftName.trim();
+    if (!nameTrim) { showToast('❌ Nhập tên người nhận!', 'error'); return; }
+    if (nameTrim.length < 2) { showToast('❌ Tên người nhận phải từ 2 ký tự trở lên!', 'error'); return; }
+    if (nameTrim.length > 50) { showToast('❌ Tên người nhận không quá 50 ký tự!', 'error'); return; }
+    const nameRegex = /^[a-zA-Z\sàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđĐ]+$/;
+    if (!nameRegex.test(nameTrim)) {
+      showToast('❌ Tên người nhận chỉ được chứa chữ cái và khoảng trắng!', 'error');
+      return;
+    }
+
+    const contactTrim = giftContact.trim();
+    if (!contactTrim) { showToast('❌ Nhập email hoặc số điện thoại!', 'error'); return; }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const isEmail = emailRegex.test(contactTrim);
+    const phoneRegex = /^(0|\+84|84)?([3|5|7|8|9][0-9]{8})$|^[0-9]{9,15}$/;
+    const isPhone = phoneRegex.test(contactTrim);
+
+    if (!isEmail && !isPhone) {
+      showToast('❌ Email hoặc Số điện thoại không hợp lệ!', 'error');
+      return;
+    }
+
+    setShowGiftTree(false);
+    setGiftName('');
+    setGiftContact('');
+    setGiftMsg('');
+    setConfetti(true);
+    setTimeout(() => setConfetti(false), 3000);
+    
+    const channel = isEmail ? 'Email' : 'tin nhắn SMS';
+    showToast(`🎁 Đã tặng cây thành công! Hệ thống đã gửi chứng nhận qua ${channel} tới ${contactTrim}`, 'success');
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [giftName, giftMsg]);
+  }, [giftName, giftContact, giftMsg]);
 
   // m² calculation (1 tree ≈ 25m²)
   const greenArea = myTrees.length * 25;
@@ -972,8 +1029,12 @@ export default function App() {
               <div style={{marginTop:12,display:'flex',gap:8}}>
                 <input type="number" className="modal-input" placeholder="Nhập số điểm..." value={grpDonate} onChange={e => setGrpDonate(e.target.value)} style={{flex:1,padding:'10px 12px',fontSize:14}} />
                 <button className="cp-cta-btn cp-cta-primary" style={{padding:'10px 18px',whiteSpace:'nowrap'}} onClick={() => {
-                  const a = parseInt(grpDonate);
-                  if (!a || a <= 0) { showToast('❌ Nhập số điểm hợp lệ!', 'error'); return; }
+                  const amtTrim = grpDonate.trim();
+                  if (!/^\d+$/.test(amtTrim) || parseInt(amtTrim) <= 0) {
+                    showToast('❌ Số điểm phải là số nguyên dương!', 'error');
+                    return;
+                  }
+                  const a = parseInt(amtTrim);
                   if (a > pts()) { showToast('❌ Không đủ điểm!', 'error'); return; }
                   openConfirm('Góp điểm cho nhóm', `Nhóm "${group?.name}"`, a, '👥', handleGrpDonate);
                 }}>💚 Góp</button>
@@ -1714,11 +1775,15 @@ export default function App() {
               <label className="modal-label">Tên người nhận *</label>
               <input type="text" className="modal-input" placeholder="VD: Nguyễn Thị Hoa" value={giftName} onChange={e => setGiftName(e.target.value)} />
             </div>
+            <div style={{marginBottom:12}}>
+              <label className="modal-label">Email hoặc Số điện thoại người nhận *</label>
+              <input type="text" className="modal-input" placeholder="VD: hoa.nguyen@gmail.com hoặc 0912345678" value={giftContact} onChange={e => setGiftContact(e.target.value)} />
+            </div>
             <div style={{marginBottom:16}}>
               <label className="modal-label">Lời nhắn (tùy chọn)</label>
               <input type="text" className="modal-input" placeholder="VD: Chúc mừng sinh nhật! 🎂" value={giftMsg} onChange={e => setGiftMsg(e.target.value)} />
             </div>
-            <button className="m-btn m-btn-primary" onClick={handleGiftTree} disabled={!giftName.trim()}>🎁 Xác nhận tặng cây</button>
+            <button className="m-btn m-btn-primary" onClick={handleGiftTree} disabled={!giftName.trim() || !giftContact.trim()}>🎁 Xác nhận tặng cây</button>
             <button className="m-btn m-btn-ghost" onClick={() => setShowGiftTree(false)}>Hủy</button>
           </div>
         </div>

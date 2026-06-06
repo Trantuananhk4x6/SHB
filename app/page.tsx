@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
@@ -358,12 +358,14 @@ function StatusBar({ light = false }: { light?: boolean }) {
 }
 
 // Bottom Navigation Bar
-type TabType = 'campaign' | 'forest' | 'leaderboard';
+type TabType = 'campaign' | 'forest' | 'leaderboard' | 'rewards' | 'profile';
 function BottomNav({ tab, setTab, notifCount }: { tab: TabType; setTab: (t: TabType) => void; notifCount: number }) {
   const items: { id: TabType; icon: React.ReactNode; label: string; badge?: number }[] = [
     { id: 'campaign', icon: I.seedling, label: 'Chiến dịch', badge: notifCount > 0 ? notifCount : undefined },
     { id: 'forest', icon: I.tree, label: 'Rừng tôi' },
     { id: 'leaderboard', icon: I.trophy, label: 'Xếp hạng' },
+    { id: 'rewards', icon: I.gift, label: 'Đổi quà' },
+    { id: 'profile', icon: I.user, label: 'Cá nhân' },
   ];
   return (
     <div className="bottom-nav">
@@ -1056,7 +1058,7 @@ export default function App() {
                   </div>
 
                   <div className="cp-cta">
-                    <button className="cp-cta-btn cp-cta-primary ripple" onClick={() => setShowBuy(true)} id="btn-buy"><span className="ic-inline">{I.tree}</span>Mua cây ngay</button>
+                    <button className="cp-cta-btn cp-cta-primary ripple" style={{ border: '2px solid #ffffff' }} onClick={() => setShowBuy(true)} id="btn-buy"><span className="ic-inline">{I.tree}</span>Đổi cây ngay</button>
                     <button className="cp-cta-btn cp-cta-secondary ripple" onClick={() => setShowDonate(true)} id="btn-donate"><span className="ic-inline">{I.heart}</span>Góp điểm</button>
                   </div>
                   <div className="cp-cta-row2">
@@ -1256,6 +1258,7 @@ export default function App() {
                       </div>
                     ))}
                   </div>
+                  <BottomNav tab={tab} setTab={setTab} notifCount={notifCount} />
                 </div>
               </div>
             )}
@@ -1314,8 +1317,8 @@ export default function App() {
                           })}
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 12 }}>
-                          <button className="cp-cta-btn cp-cta-primary ripple" style={{ margin: 0, fontSize: 12, padding: '10px 8px' }} onClick={() => { setTab('campaign'); setTimeout(() => setShowBuy(true), 50); }}>
-                            <span className="ic-inline">{I.tree}</span>Mua cây ngay
+                          <button className="cp-cta-btn cp-cta-primary ripple" style={{ margin: 0, fontSize: 12, padding: '10px 8px', border: '2px solid #ffffff' }} onClick={() => { setTab('campaign'); setTimeout(() => setShowBuy(true), 50); }}>
+                            <span className="ic-inline">{I.tree}</span>Đổi cây ngay
                           </button>
                           <button className="cp-cta-btn cp-cta-secondary ripple" style={{ margin: 0, fontSize: 12, padding: '10px 8px' }} onClick={() => { setTab('campaign'); setTimeout(() => setShowDonate(true), 50); }}>
                             <span className="ic-inline">{I.heart}</span>Góp điểm ngay
@@ -1392,6 +1395,7 @@ export default function App() {
                       );
                     })()}
                   </div>
+                  <BottomNav tab={tab} setTab={setTab} notifCount={notifCount} />
                 </div>
               </div>
             )}
@@ -1443,7 +1447,7 @@ export default function App() {
                             </div>
                           </div>
                         ); })()}
-                        <button className="lb-buy-nudge" onClick={() => { setTab('campaign'); setShowBuy(true); }}><span className="ic-inline">{I.tree}</span>Mua cây để leo hạng →</button>
+                        <button className="lb-buy-nudge" onClick={() => { setTab('campaign'); setShowBuy(true); }}><span className="ic-inline">{I.tree}</span>Đổi cây để leo hạng →</button>
                       </div>
                     ) : (
                       <div className="lb-list">
@@ -1477,6 +1481,7 @@ export default function App() {
                       </div>
                     )}
                   </div>
+                  <BottomNav tab={tab} setTab={setTab} notifCount={notifCount} />
                 </div>
               </div>
             )}
@@ -1547,7 +1552,7 @@ export default function App() {
                             </div>
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--t1)' }}>{t.name}</div>
-                              <div style={{ fontSize: 11, color: 'var(--t2)', marginTop: 2 }}>{t.location} · {t.species}</div>
+                              <div style={{ fontSize: 11, color: 'var(--t2)', marginTop: 2 }}>{t.location} · {t.date}</div>
                             </div>
                             <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ok)', background: '#D1FAE5', borderRadius: 'var(--r-full)', padding: '2px 8px', flexShrink: 0 }}>#{i + 1}</div>
                           </button>
@@ -1603,10 +1608,10 @@ export default function App() {
               <div className="modal-bg" onClick={() => setShowBuy(false)}>
                 <div className="modal-sheet" onClick={e => e.stopPropagation()}>
                   <div className="modal-handle" />
-                  <div className="modal-title"><span className="ic-inline">{I.tree}</span>Mua cây ngay</div>
-                  <div className="modal-sub">Sử dụng <strong>{fmt(TREE_PRICE)} điểm</strong> từ <strong>{ptType === 'reward' ? 'Quỹ điểm thưởng' : 'Quỹ hoàn tiền'}</strong> để trồng 1 cây xanh</div>
+                  <div className="modal-title"><span className="ic-inline">{I.tree}</span>Đổi cây ngay</div>
+                  <div className="modal-sub">Sử dụng <strong>{fmt(TREE_PRICE)} điểm</strong> từ <strong>{ptType === 'reward' ? 'Quỹ điểm thưởng' : 'Quỹ hoàn tiền'}</strong> để đổi 1 cây xanh</div>
                   <div style={{ background: 'var(--section)', borderRadius: 'var(--r-lg)', padding: 16, marginBottom: 16 }}>
-                    {[['Giá mỗi cây', `${fmt(TREE_PRICE)} điểm`], ['Số dư hiện tại', `${fmt(pts())} điểm`], ['Sau khi mua', `${fmt(Math.max(pts() - TREE_PRICE, 0))} điểm`]].map(([k, v], i) => (
+                    {[['Giá mỗi cây', `${fmt(TREE_PRICE)} điểm`], ['Số dư hiện tại', `${fmt(pts())} điểm`], ['Sau khi đổi', `${fmt(Math.max(pts() - TREE_PRICE, 0))} điểm`]].map(([k, v], i) => (
                       <div key={i} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: i < 2 ? 8 : 0 }}>
                         <span style={{ fontSize: 13, color: 'var(--t2)' }}>{k}</span>
                         <span style={{ fontSize: 13, fontWeight: 700, color: i === 2 ? (pts() >= TREE_PRICE ? 'var(--ok)' : 'var(--err)') : i === 1 ? 'var(--shb)' : 'var(--t1)' }}>{v}</span>
@@ -1617,7 +1622,7 @@ export default function App() {
                     <button className={`pt-btn ${ptType === 'reward' ? 'pt-on' : ''}`} onClick={() => setPtType('reward')}><span className="ic-inline">{I.gift}</span>Điểm thưởng</button>
                     <button className={`pt-btn ${ptType === 'cashback' ? 'pt-on' : ''}`} onClick={() => setPtType('cashback')}><span className="ic-inline">{I.wallet}</span>Hoàn tiền</button>
                   </div>
-                  <button className="m-btn m-btn-primary" onClick={() => { if (pts() < TREE_PRICE) { showToast('Không đủ điểm!', 'error'); return; } setShowBuy(false); openConfirm('Mua cây xanh', 'Trồng 1 cây xanh cho Việt Nam', TREE_PRICE, 'tree', handleBuy); }} disabled={pts() < TREE_PRICE}>
+                  <button className="m-btn m-btn-primary" onClick={() => { if (pts() < TREE_PRICE) { showToast('Không đủ điểm!', 'error'); return; } setShowBuy(false); openConfirm('Đổi cây xanh', 'Trồng 1 cây xanh cho Việt Nam', TREE_PRICE, 'tree', handleBuy); }} disabled={pts() < TREE_PRICE}>
                     {pts() >= TREE_PRICE ? 'Xem lại & Xác nhận' : 'Không đủ điểm'}
                   </button>
                   <button className="m-btn m-btn-ghost" onClick={() => setShowBuy(false)}>Hủy</button>

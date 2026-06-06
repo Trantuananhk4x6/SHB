@@ -1062,7 +1062,7 @@ export default function App() {
                     <button className="cp-cta-btn cp-cta-secondary ripple" onClick={() => setShowDonate(true)} id="btn-donate"><span className="ic-inline">{I.heart}</span>Góp điểm</button>
                   </div>
                   <div className="cp-cta-row2">
-                      <button className="cp-cta-ghost" onClick={() => setShowMyTrees(true)}><span className="ic-inline">{I.clipboard}</span>Cây của tôi</button>
+                      <button className="cp-cta-ghost" onClick={() => setTab('forest')}><span className="ic-inline">{I.tree}</span>Cây của tôi</button>
                       <button className="cp-cta-ghost" onClick={() => setTab('leaderboard')}><span className="ic-inline">{I.trophy}</span>Bảng Xếp hạng</button>
                       <button className="cp-cta-ghost cp-cta-ghost-green" onClick={openRandomDonate}><span className="ic-inline">{I.dice}</span>Đổi cây ngẫu nhiên</button>
                       <button className="cp-cta-ghost cp-cta-ghost-blue" onClick={() => setShowCreateGrp(true)}><span className="ic-inline">{I.users}</span>Tạo nhóm</button>
@@ -1258,7 +1258,6 @@ export default function App() {
                       </div>
                     ))}
                   </div>
-                  <BottomNav tab={tab} setTab={setTab} notifCount={notifCount} />
                 </div>
               </div>
             )}
@@ -1395,7 +1394,6 @@ export default function App() {
                       );
                     })()}
                   </div>
-                  <BottomNav tab={tab} setTab={setTab} notifCount={notifCount} />
                 </div>
               </div>
             )}
@@ -1481,7 +1479,6 @@ export default function App() {
                       </div>
                     )}
                   </div>
-                  <BottomNav tab={tab} setTab={setTab} notifCount={notifCount} />
                 </div>
               </div>
             )}

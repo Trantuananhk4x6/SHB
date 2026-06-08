@@ -1513,3 +1513,12 @@ input[type="number"]{-moz-appearance:textfield}
   cursor:pointer;font-family:inherit;transition:var(--tr-f);
 }
 .suc-btn-ghost:active{background:rgba(255,255,255,.35)}
+.suc-thanks{
+  padding:14px 24px 4px;
+  font-size:13px;line-height:1.6;
+  color:rgba(255,255,255,.92);
+  text-align:center;
+  font-weight:500;
+  font-style:italic;
+  letter-spacing:.1px;
+}

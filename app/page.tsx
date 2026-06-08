@@ -97,7 +97,10 @@ interface LeaderboardGroup { rank: number; name: string; members: number; trees:
 
 type SuccessData =
   | { type: 'buy'; treeName: string; treeNumber: number; location: string; date: string; pointsUsed: number; remaining: number; ptSrc: string }
-  | { type: 'donate'; treeName: string; donated: number; newPct: number; treeCurrent: number; treeTarget: number; remaining: number; ptSrc: string }
+  | { type: 'donate'; treeName: string; donated: number; newPct: number; treeCurrent: number; treeTarget: number; remaining: number; ptSrc: string; isRandom?: boolean }
+  | { type: 'groupDonate'; groupName: string; donated: number; remaining: number; ptSrc: string; treesCompleted: number }
+  | { type: 'createGroup'; groupName: string; groupCode: string }
+  | { type: 'joinGroup'; groupName: string; groupCode: string; memberCount: number }
   | { type: 'gift'; treeName: string; treeNumber: number; recipient: string; contact: string; msg: string; channel: string };
 
 // ================================================================
@@ -683,16 +686,17 @@ export default function App() {
     const code = genCode();
     setGroup({ id: Date.now().toString(), name: nameTrim, code, members: [{ name: 'Bạn', avatar: 'B' }, { name: pick(NAMES), avatar: pick(AVATARS) }], trees: [{ id: 1, current: 0, target: TREE_PRICE, completed: false }], totalTreesBought: 0 });
     setGrpTreePage(1); setShowCreateGrp(false); setGrpName('');
-    showToast(`Đã tạo nhóm – Mã: ${code}`, 'success');
+    setSuccessData({ type: 'createGroup', groupName: nameTrim, groupCode: code });
   }, [grpName, showToast]);
 
   const handleJoinGrp = useCallback(() => {
     const codeTrim = joinCode.trim().toUpperCase();
     if (!codeTrim) { showToast('Nhập mã nhóm!', 'error'); return; }
     if (!/^[A-Z0-9]{6}$/.test(codeTrim)) { showToast('Mã nhóm phải gồm đúng 6 ký tự!', 'error'); return; }
-    setGroup({ id: Date.now().toString(), name: pick(['Rừng Xanh SHB', 'Team Green VN', 'Sài Gòn Xanh']), code: codeTrim, members: [{ name: pick(NAMES), avatar: pick(AVATARS) }, { name: pick(NAMES), avatar: pick(AVATARS) }, { name: 'Bạn', avatar: 'B' }], trees: [{ id: 1, current: 35000, target: TREE_PRICE, completed: false }, { id: 2, current: TREE_PRICE, target: TREE_PRICE, completed: true, treeNumber: 195 }], totalTreesBought: 1 });
+    const grpName = pick(['Rừng Xanh SHB', 'Team Green VN', 'Sài Gòn Xanh']);
+    setGroup({ id: Date.now().toString(), name: grpName, code: codeTrim, members: [{ name: pick(NAMES), avatar: pick(AVATARS) }, { name: pick(NAMES), avatar: pick(AVATARS) }, { name: 'Bạn', avatar: 'B' }], trees: [{ id: 1, current: 35000, target: TREE_PRICE, completed: false }, { id: 2, current: TREE_PRICE, target: TREE_PRICE, completed: true, treeNumber: 195 }], totalTreesBought: 1 });
     setGrpTreePage(1); setShowJoinGrp(false); setJoinCode('');
-    showToast('Đã tham gia nhóm!', 'success');
+    setSuccessData({ type: 'joinGroup', groupName: grpName, groupCode: codeTrim, memberCount: 3 });
   }, [joinCode, showToast]);
 
   const handleGrpDonate = useCallback(() => {
@@ -700,6 +704,13 @@ export default function App() {
     if (!/^\d+$/.test(amtTrim) || parseInt(amtTrim) <= 0) { showToast('Số điểm phải là số nguyên dương!', 'error'); return; }
     const a = parseInt(amtTrim);
     if (a > pts()) { showToast('Không đủ điểm!', 'error'); return; }
+    const grpName = group?.name || 'nhóm của bạn';
+    const ptSrc = ptType === 'reward' ? 'Điểm thưởng' : 'Điểm hoàn tiền';
+    const remaining = pts() - a;
+    // pre-calculate trees that will complete
+    let remCalc = a; let willComplete = 0;
+    if (group) { for (const t of group.trees) { if (t.completed || remCalc <= 0) continue; const add = Math.min(remCalc, t.target - t.current); remCalc -= add; if (t.current + add >= t.target) willComplete++; } }
+    const treesCompleted = (group?.trees.filter(t => t.completed).length || 0) + willComplete;
     deduct(a);
     setGroup(prev => {
       if (!prev) return null;
@@ -710,7 +721,6 @@ export default function App() {
         const nc = t.current + add;
         if (nc >= t.target) {
           const tn = totalTrees + Math.floor(Math.random() * 5) + 1;
-          showToast(`Nhóm "${prev.name}" trồng cây #${tn}!`, 'success');
           setConfetti(true); setTimeout(() => setConfetti(false), 3000);
           setTotalTrees(p => p + 1);
           return { ...t, current: nc, completed: true, treeNumber: tn };
@@ -724,9 +734,10 @@ export default function App() {
       }
       return { ...prev, trees: ut, totalTreesBought: ut.filter(t => t.completed).length };
     });
-    setGrpDonate(''); showToast(`Góp ${fmt(a)} điểm cho nhóm!`, 'success');
+    setGrpDonate('');
+    setSuccessData({ type: 'groupDonate', groupName: grpName, donated: a, remaining, ptSrc, treesCompleted });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [grpDonate, ptType, rewardPts, cashbackPts, totalTrees]);
+  }, [grpDonate, ptType, rewardPts, cashbackPts, totalTrees, group]);
 
   const openRandomDonate = useCallback(() => {
     const target = [...comTrees].filter(t => !t.completed).sort((a, b) => (a.currentPoints / a.targetPoints) - (b.currentPoints / b.targetPoints))[0] || null;
@@ -740,6 +751,12 @@ export default function App() {
     const a = parseInt(amtTrim);
     if (a > pts()) { showToast('Không đủ điểm!', 'error'); return; }
     if (!randomTarget) { showToast('Không có cây nào cần góp!', 'error'); return; }
+    const treeName = randomTarget.name;
+    const treeTarget = randomTarget.targetPoints;
+    const treeCurrent = Math.min(randomTarget.currentPoints + a, treeTarget);
+    const newPct = Math.round((treeCurrent / treeTarget) * 100);
+    const ptSrc = ptType === 'reward' ? 'Điểm thưởng' : 'Điểm hoàn tiền';
+    const remaining = pts() - a;
     deduct(a);
     setComTrees(prev => prev.map(t => {
       if (t.id !== randomTarget.id) return t;
@@ -747,14 +764,13 @@ export default function App() {
       const done = np >= t.targetPoints;
       if (done && !t.completed) {
         const tn = totalTrees + 1; setTotalTrees(p => p + 1);
-        showToast(`${t.name} đã trồng thành công!`, 'success');
         setConfetti(true); setTimeout(() => setConfetti(false), 3000);
         return { ...t, currentPoints: np, completed: true, treeNumber: tn, contributorCount: t.contributorCount + 1, contributors: [...t.contributors, { name: 'Bạn', avatar: 'B' }] };
       }
       return { ...t, currentPoints: np, contributorCount: t.contributorCount + 1, contributors: [...t.contributors, { name: 'Bạn', avatar: 'B' }] };
     }));
     setShowRandomDonate(false); setRandomAmt('');
-    showToast(`Đã góp ${fmt(a)} điểm cho ${randomTarget.name}!`, 'success');
+    setSuccessData({ type: 'donate', treeName, donated: a, newPct, treeCurrent, treeTarget, remaining, ptSrc, isRandom: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [randomAmt, randomTarget, ptType, rewardPts, cashbackPts, totalTrees]);
 
@@ -1624,37 +1640,64 @@ export default function App() {
             {/* ── SUCCESS SCREEN ── */}
             {successData && (() => {
               const d = successData;
-              const emoji = d.type === 'buy' ? '🌳' : d.type === 'donate' ? '🌱' : '🎁';
-              const title = d.type === 'buy' ? 'Đổi cây xanh thành công!' : d.type === 'donate' ? 'Góp điểm thành công!' : 'Tặng cây thành công!';
-              const rows: [string, string, string?][] = d.type === 'buy' ? [
-                ['Tên cây', d.treeName],
-                ['Mã cây', `SHB-TREE-${d.treeNumber}`, 'brand'],
-                ['Vị trí trồng', d.location],
-                ['Ngày trồng', d.date],
-                [d.ptSrc + ' đã dùng', `${fmt(d.pointsUsed)} điểm`, 'red'],
-                ['Điểm còn lại', `${fmt(d.remaining)} điểm`, 'green'],
-              ] : d.type === 'donate' ? [
-                ['Cây được góp', d.treeName],
-                [d.ptSrc + ' đã góp', `${fmt(d.donated)} điểm`, 'red'],
-                ['Điểm còn lại', `${fmt(d.remaining)} điểm`, 'green'],
-              ] : [
-                ['Cây đã tặng', `${d.treeName} #${d.treeNumber}`, 'brand'],
-                ['Người nhận', d.recipient],
-                ['Liên hệ', d.contact],
-                ['Gửi chứng nhận qua', d.channel, 'green'],
-                ...(d.msg ? [['Lời nhắn', `"${d.msg}"`] as [string, string]] : []),
-              ];
+              const emoji =
+                d.type === 'buy' ? '🌳' :
+                d.type === 'donate' ? (d.isRandom ? '🎲' : '🌱') :
+                d.type === 'groupDonate' ? '🤝' :
+                d.type === 'createGroup' ? '✨' :
+                d.type === 'joinGroup' ? '🙌' : '🎁';
+              const title =
+                d.type === 'buy' ? 'Đổi cây xanh thành công!' :
+                d.type === 'donate' ? (d.isRandom ? 'Góp điểm ngẫu nhiên thành công!' : 'Góp điểm thành công!') :
+                d.type === 'groupDonate' ? 'Góp điểm cho nhóm thành công!' :
+                d.type === 'createGroup' ? 'Tạo nhóm thành công!' :
+                d.type === 'joinGroup' ? 'Tham gia nhóm thành công!' : 'Tặng cây thành công!';
+              const isGroup = d.type === 'groupDonate' || d.type === 'createGroup' || d.type === 'joinGroup';
+              const groupName = isGroup ? (d as { groupName: string }).groupName : '';
+              const thankYou = isGroup
+                ? `Cảm ơn bạn và nhóm "${groupName}" đã đồng hành cùng SHB, cùng nhau góp phần phủ xanh và tô điểm xanh cho Việt Nam 🌿`
+                : 'Cảm ơn bạn đã đồng hành cùng SHB để góp phần tô điểm xanh cho trái đất 🌍';
+              const rows: [string, string, string?][] =
+                d.type === 'buy' ? [
+                  ['Tên cây', d.treeName],
+                  ['Mã cây', `SHB-TREE-${d.treeNumber}`, 'brand'],
+                  ['Vị trí trồng', d.location],
+                  ['Ngày trồng', d.date],
+                  [d.ptSrc + ' đã dùng', `${fmt(d.pointsUsed)} điểm`, 'red'],
+                  ['Điểm còn lại', `${fmt(d.remaining)} điểm`, 'green'],
+                ] : d.type === 'donate' ? [
+                  [d.isRandom ? 'Cây được chọn tự động' : 'Cây được góp', d.treeName],
+                  [d.ptSrc + ' đã góp', `${fmt(d.donated)} điểm`, 'red'],
+                  ['Điểm còn lại', `${fmt(d.remaining)} điểm`, 'green'],
+                ] : d.type === 'groupDonate' ? [
+                  ['Nhóm', d.groupName, 'brand'],
+                  [d.ptSrc + ' đã góp', `${fmt(d.donated)} điểm`, 'red'],
+                  ['Tổng cây nhóm trồng', `${d.treesCompleted} cây 🌳`, 'green'],
+                  ['Điểm còn lại', `${fmt(d.remaining)} điểm`, 'green'],
+                ] : d.type === 'createGroup' ? [
+                  ['Tên nhóm', d.groupName, 'brand'],
+                  ['Mã nhóm', d.groupCode, 'brand'],
+                  ['Chia sẻ mã', 'Mời bạn bè cùng góp điểm'],
+                ] : d.type === 'joinGroup' ? [
+                  ['Tên nhóm', d.groupName, 'brand'],
+                  ['Mã nhóm', d.groupCode],
+                  ['Thành viên', `${d.memberCount} người đang đồng hành`, 'green'],
+                ] : [
+                  ['Cây đã tặng', `${d.treeName} #${d.treeNumber}`, 'brand'],
+                  ['Người nhận', d.recipient],
+                  ['Liên hệ', d.contact],
+                  ['Gửi chứng nhận qua', d.channel, 'green'],
+                  ...(d.msg ? [['Lời nhắn', `"${d.msg}"`] as [string, string]] : []),
+                ];
               return (
                 <div className="suc-screen">
                   <button className="suc-close" onClick={() => setSuccessData(null)}>✕</button>
                   <div className="suc-emoji">{emoji}</div>
                   <div className="suc-card">
-                    {/* SHB logo */}
                     <div className="suc-logo">
                       <img src="/shb-logo.png" alt="SHB" className="suc-logo-img" />
                       <span className="suc-logo-tag">Green</span>
                     </div>
-                    {/* Check + title */}
                     <div className="suc-check-row">
                       <div className="suc-check-circle">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
@@ -1678,7 +1721,16 @@ export default function App() {
                         <div style={{ fontSize: 11, color: '#6B7280', marginTop: 3 }}>{fmt(d.treeCurrent)} / {fmt(d.treeTarget)} điểm</div>
                       </div>
                     )}
+                    {/* Group code hint */}
+                    {d.type === 'createGroup' && (
+                      <div style={{ marginTop: 10, background: '#FFF5EB', borderRadius: 10, padding: '10px 14px', border: '1.5px dashed #F47B20', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontSize: 18 }}>📋</span>
+                        <div><div style={{ fontSize: 12, color: '#92400E', fontWeight: 700 }}>Sao chép mã để mời bạn bè</div><div style={{ fontSize: 18, fontWeight: 900, color: '#F47B20', letterSpacing: 4 }}>{d.groupCode}</div></div>
+                      </div>
+                    )}
                   </div>
+                  {/* Thank you message */}
+                  <div className="suc-thanks">{thankYou}</div>
                   {/* Actions */}
                   <div className="suc-actions">
                     {d.type === 'buy' && <>
@@ -1687,6 +1739,18 @@ export default function App() {
                     </>}
                     {d.type === 'donate' && <>
                       <button className="suc-btn-primary" onClick={() => { setSuccessData(null); setShowDonate(true); }}>🌱 Tiếp tục góp điểm</button>
+                      <button className="suc-btn-ghost" onClick={() => setSuccessData(null)}>Về chiến dịch</button>
+                    </>}
+                    {d.type === 'groupDonate' && <>
+                      <button className="suc-btn-primary" onClick={() => setSuccessData(null)}>🤝 Xem tiến độ nhóm</button>
+                      <button className="suc-btn-ghost" onClick={() => setSuccessData(null)}>Về chiến dịch</button>
+                    </>}
+                    {d.type === 'createGroup' && <>
+                      <button className="suc-btn-primary" onClick={() => setSuccessData(null)}>✨ Xem nhóm của tôi</button>
+                      <button className="suc-btn-ghost" onClick={() => { setSuccessData(null); setShowShare(true); }}>🌿 Chia sẻ chiến dịch</button>
+                    </>}
+                    {d.type === 'joinGroup' && <>
+                      <button className="suc-btn-primary" onClick={() => setSuccessData(null)}>🙌 Xem nhóm &amp; góp điểm</button>
                       <button className="suc-btn-ghost" onClick={() => setSuccessData(null)}>Về chiến dịch</button>
                     </>}
                     {d.type === 'gift' && <>

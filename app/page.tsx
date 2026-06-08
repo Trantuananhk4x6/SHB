@@ -395,7 +395,7 @@ function SplashScreen({ hiding }: { hiding: boolean }) {
   return (
     <div className={`splash ${hiding ? 'splash-hiding' : ''}`}>
       <div className="splash-icon">🌳</div>
-      <div className="splash-brand">SHB Green</div>
+      <div className="splash-brand">SHB SAHA</div>
       <div className="splash-tagline">Cùng nhau phủ xanh Việt Nam</div>
       <div className="splash-progress"><div className="splash-progress-fill" /></div>
     </div>
@@ -1696,7 +1696,7 @@ export default function App() {
                   <div className="suc-card">
                     <div className="suc-logo">
                       <img src="/shb-logo.png" alt="SHB" className="suc-logo-img" />
-                      <span className="suc-logo-tag">Green</span>
+                      <span className="suc-logo-tag">SHB SAHA</span>
                     </div>
                     <div className="suc-check-row">
                       <div className="suc-check-circle">
@@ -1734,19 +1734,19 @@ export default function App() {
                   {/* Actions */}
                   <div className="suc-actions">
                     {d.type === 'buy' && <>
-                      <button className="suc-btn-primary" onClick={() => { setSuccessData(null); setShowEcert(true); }}>🏅 Xem chứng nhận xanh</button>
-                      <button className="suc-btn-ghost" onClick={() => { setSuccessData(null); setTab('forest'); }}>🌲 Khám phá rừng của tôi</button>
+                      <button className="suc-btn-primary" onClick={() => { setSuccessData(null); setShowEcert(true); }}>Xem chứng nhận xanh</button>
+                      <button className="suc-btn-ghost" onClick={() => { setSuccessData(null); setTab('forest'); }}>Khám phá rừng của tôi</button>
                     </>}
                     {d.type === 'donate' && <>
-                      <button className="suc-btn-primary" onClick={() => { setSuccessData(null); setShowDonate(true); }}>🌱 Tiếp tục góp điểm</button>
+                      <button className="suc-btn-primary" onClick={() => { setSuccessData(null); setShowDonate(true); }}>Tiếp tục góp điểm</button>
                       <button className="suc-btn-ghost" onClick={() => setSuccessData(null)}>Về chiến dịch</button>
                     </>}
                     {d.type === 'groupDonate' && <>
-                      <button className="suc-btn-primary" onClick={() => setSuccessData(null)}>🤝 Xem tiến độ nhóm</button>
+                      <button className="suc-btn-primary" onClick={() => setSuccessData(null)}>Xem tiến độ nhóm</button>
                       <button className="suc-btn-ghost" onClick={() => setSuccessData(null)}>Về chiến dịch</button>
                     </>}
                     {d.type === 'createGroup' && <>
-                      <button className="suc-btn-primary" onClick={() => setSuccessData(null)}>✨ Xem nhóm của tôi</button>
+                      <button className="suc-btn-primary" onClick={() => setSuccessData(null)}>Xem nhóm của tôi</button>
                       <button className="suc-btn-ghost" onClick={() => { setSuccessData(null); setShowShare(true); }}>🌿 Chia sẻ chiến dịch</button>
                     </>}
                     {d.type === 'joinGroup' && <>

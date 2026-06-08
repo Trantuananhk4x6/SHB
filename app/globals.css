@@ -1473,13 +1473,8 @@ input[type="number"]{-moz-appearance:textfield}
   margin:16px 16px 0;padding:20px 18px 16px;
   box-shadow:0 8px 40px rgba(0,0,0,.15);
 }
-.suc-logo{display:flex;align-items:center;gap:7px;margin-bottom:16px}
-.suc-logo-box{
-  width:32px;height:32px;background:#F47B20;border-radius:8px;
-  display:flex;align-items:center;justify-content:center;
-  font-size:17px;font-weight:900;color:#fff;letter-spacing:-1px;
-}
-.suc-logo-name{font-size:19px;font-weight:900;color:#F47B20;letter-spacing:-.5px}
+.suc-logo{display:flex;align-items:center;gap:8px;margin-bottom:16px}
+.suc-logo-img{height:28px;width:auto;object-fit:contain}
 .suc-logo-tag{font-size:11px;color:#9CA3AF;font-weight:600;letter-spacing:.2px;margin-left:2px}
 .suc-check-row{display:flex;align-items:center;gap:12px;margin-bottom:14px}
 .suc-check-circle{

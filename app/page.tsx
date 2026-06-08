@@ -1651,8 +1651,7 @@ export default function App() {
                   <div className="suc-card">
                     {/* SHB logo */}
                     <div className="suc-logo">
-                      <div className="suc-logo-box">S</div>
-                      <span className="suc-logo-name">SHB</span>
+                      <img src="/shb-logo.png" alt="SHB" className="suc-logo-img" />
                       <span className="suc-logo-tag">Green</span>
                     </div>
                     {/* Check + title */}
